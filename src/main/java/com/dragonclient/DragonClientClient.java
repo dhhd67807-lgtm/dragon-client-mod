@@ -38,7 +38,8 @@ public class DragonClientClient implements ClientModInitializer {
         hudRenderer = new HudRenderer();
 
         // Register HUD rendering
-        HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
+        HudRenderCallback.EVENT.register((drawContext, tickCounter) -> {
+            float tickDelta = tickCounter.getTickDelta(false);
             hudRenderer.render(drawContext, tickDelta);
         });
 
