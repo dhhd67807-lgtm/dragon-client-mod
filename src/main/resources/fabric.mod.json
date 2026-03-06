@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "dragonclient",
+  "version": "${version}",
+  "name": "Dragon Client",
+  "description": "A client-side utility mod with HUD elements, visual enhancements, and quality of life features",
+  "authors": [
+    "Dragon Client Team"
+  ],
+  "contact": {
+    "homepage": "https://github.com/yourusername/dragon-client-mod",
+    "sources": "https://github.com/yourusername/dragon-client-mod"
+  },
+  "license": "MIT",
+  "icon": "assets/dragonclient/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "com.dragonclient.DragonClientMod"
+    ],
+    "client": [
+      "com.dragonclient.DragonClientClient"
+    ]
+  },
+  "mixins": [
+    "dragonclient.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": ">=1.16.5",
+    "java": ">=17",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
