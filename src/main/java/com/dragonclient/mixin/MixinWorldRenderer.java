@@ -11,14 +11,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(WorldRenderer.class)
 public class MixinWorldRenderer {
     
-    @Inject(method = "hasRain", at = @At("HEAD"), cancellable = true)
+    // For MC 1.16-1.20 (hasRain method exists)
+    @Inject(method = "hasRain", at = @At("HEAD"), cancellable = true, require = 0)
     private void onHasRain(CallbackInfoReturnable<Boolean> cir) {
         if (WeatherChangerModule.clearWeather) {
             cir.setReturnValue(false);
         }
     }
     
-    @Inject(method = "hasSnow", at = @At("HEAD"), cancellable = true)
+    // For MC 1.16-1.20 (hasSnow method exists)
+    @Inject(method = "hasSnow", at = @At("HEAD"), cancellable = true, require = 0)
     private void onHasSnow(CallbackInfoReturnable<Boolean> cir) {
         if (WeatherChangerModule.clearWeather) {
             cir.setReturnValue(false);
