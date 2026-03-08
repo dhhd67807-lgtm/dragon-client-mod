@@ -1,27 +1,30 @@
 # Gradle
 .gradle/
 build/
-out/
-classes/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# Eclipse
-*.launch
-.settings/
-.metadata
-.classpath
-.project
-
-# IntelliJ IDEA
+# IDE
 .idea/
 *.iml
 *.ipr
 *.iws
-
-# VS Code
 .vscode/
-
-# macOS
 .DS_Store
 
-# Fabric
+# Minecraft
 run/
+logs/
+crash-reports/
+
+# Compiled
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Temporary
+*.tmp
+*.bak
+*.swp
+*~

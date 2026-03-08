@@ -1,0 +1,12 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "dragonclient:font/BebasNeue-Regular.ttf",
+      "size": 11.0,
+      "oversample": 2.0,
+      "shift": [0.0, 1.0],
+      "skip": ""
+    }
+  ]
+}

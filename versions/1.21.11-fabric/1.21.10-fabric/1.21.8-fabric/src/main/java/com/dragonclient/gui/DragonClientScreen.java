@@ -1,0 +1,411 @@
+package com.dragonclient.gui;
+
+import com.dragonclient.DragonClientMod;
+import com.dragonclient.module.Module;
+import com.dragonclient.module.ModuleCategory;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.Text;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.Identifier;
+import net.minecraft.client.font.TextRenderer;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class DragonClientScreen extends Screen {
+    private ModuleCategory selectedCategory = ModuleCategory.HUD;
+    private final List<Module> modules;
+    private static final int GUI_WIDTH = 700;
+    private static final int GUI_HEIGHT = 450;
+    private static final int CARD_WIDTH = 160;
+    private static final int CARD_HEIGHT = 110;
+    private static final int CARD_SPACING = 10;
+    private static final int CARDS_PER_ROW = 4;
+    private static final int FIXED_GUI_SCALE = 2; // Always render as if GUI scale is 2
+    
+    // Texture identifiers
+    private static final Identifier STAR_ICON = Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
+    private static final Identifier CARD_TEXTURE = Identifier.of("dragonclient", "textures/gui/cards.png");
+    private static final Identifier ICON_1 = Identifier.of("dragonclient", "textures/gui/1.png");
+    private static final Identifier ICON_2 = Identifier.of("dragonclient", "textures/gui/2.png");
+    private static final Identifier ICON_4 = Identifier.of("dragonclient", "textures/gui/4.png");
+    private static final Identifier ULTRA_ICON = Identifier.of("dragonclient", "textures/gui/ultra.png");
+    
+    // Custom font identifier
+    private static final Identifier BEBAS_FONT = Identifier.of("minecraft", "dragon");
+    
+    private int guiLeft;
+    private int guiTop;
+    private int scaledWidth;
+    private int scaledHeight;
+    private TextRenderer bebasFont;
+    private float scrollOffset = 0;
+    
+    public DragonClientScreen() {
+        super(Text.literal("Dragon Client"));
+        this.modules = new ArrayList<>(DragonClientMod.getInstance().getModuleManager().getModules());
+        // Get the Bebas Neue font
+        MinecraftClient client = MinecraftClient.getInstance();
+        try {
+            // Access the font manager through reflection to get custom font
+            var fontManagerField = MinecraftClient.class.getDeclaredField("field_1772"); // fontManager field
+            fontManagerField.setAccessible(true);
+            var fontManager = fontManagerField.get(client);
+            var getTextRendererMethod = fontManager.getClass().getMethod("method_27542", Identifier.class);
+            this.bebasFont = (TextRenderer) getTextRendererMethod.invoke(fontManager, BEBAS_FONT);
+        } catch (Exception e) {
+            // Fallback to default font if custom font fails to load
+            this.bebasFont = client.textRenderer;
+        }
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        MinecraftClient client = MinecraftClient.getInstance();
+        
+        // Use fixed scale for GUI independence
+        this.scaledWidth = client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE;
+        this.scaledHeight = client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE;
+        this.guiLeft = (scaledWidth - GUI_WIDTH) / 2;
+        this.guiTop = (scaledHeight - GUI_HEIGHT) / 2;
+    }
+    
+    // Helper method to draw text with better rendering using custom font
+    private void drawStyledText(DrawContext context, String text, int x, int y, int color, boolean shadow) {
+        TextRenderer font = this.bebasFont != null ? this.bebasFont : this.textRenderer;
+        if (shadow) {
+            context.drawTextWithShadow(font, text, x, y, color);
+        } else {
+            context.drawText(font, text, x, y, color, false);
+        }
+    }
+    
+    // Helper method to draw centered text with custom styling
+    private void drawCenteredStyledText(DrawContext context, String text, int x, int y, int color, boolean shadow) {
+        TextRenderer font = this.bebasFont != null ? this.bebasFont : this.textRenderer;
+        int textWidth = font.getWidth(text);
+        if (shadow) {
+            context.drawTextWithShadow(font, text, x - textWidth / 2, y, color);
+        } else {
+            context.drawText(font, text, x - textWidth / 2, y, color, false);
+        }
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        // 1.21.6+: Skip renderBackground() - causes "Can only blur once per frame" error
+        context.fillGradient(0, 0, this.width, this.height, 0xC0101010, 0xD0101010);
+        
+        MinecraftClient client = MinecraftClient.getInstance();
+        double currentScale = client.getWindow().getScaleFactor();
+        double targetScale = FIXED_GUI_SCALE;
+        float scaleFactor = (float)(targetScale / currentScale);
+        
+        int transformedMouseX = (int)(mouseX / scaleFactor);
+        int transformedMouseY = (int)(mouseY / scaleFactor);
+        
+        var matrices = context.getMatrices();
+        matrices.pushMatrix();
+        matrices.scale(scaleFactor, scaleFactor); // 1.21.6: Matrix3x2fStack only has X,Y (no Z)
+        
+        // Draw main GUI background with rounded corners (Smoky Black)
+        drawRoundedRect(context, guiLeft, guiTop, GUI_WIDTH, GUI_HEIGHT, 0xFF100C08);
+        
+        // Draw border around the GUI
+        drawRoundedBorder(context, guiLeft, guiTop, GUI_WIDTH, GUI_HEIGHT, 0xFF2A2622);
+        
+        // Draw top bar with subtle gradient (default style)
+        context.fill(guiLeft, guiTop, guiLeft + GUI_WIDTH, guiTop + 50, 0xFF1A1614);
+        context.fill(guiLeft, guiTop + 49, guiLeft + GUI_WIDTH, guiTop + 50, 0xFF252220);
+        
+        // Draw "MODS" title with cs_star icon
+        String title = "MODS";
+        int titleWidth = this.textRenderer.getWidth(title);
+        int starSize = 16;
+        int totalWidth = starSize + 5 + titleWidth; // star + gap + text
+        int headerStartX = guiLeft + (GUI_WIDTH - totalWidth) / 2;
+        
+        // Draw star icon before title (centered horizontally)
+        int starX = headerStartX;
+        int starY = guiTop + 17;
+        
+        // Draw star icon
+        drawTexture(context, STAR_ICON, starX, starY, starSize, starSize);
+        
+        // Draw title text after star with enhanced styling using Bebas Neue font
+        TextRenderer font = this.bebasFont != null ? this.bebasFont : this.textRenderer;
+        context.drawTextWithShadow(font, title, starX + starSize + 5, guiTop + 20, 0xFFFEFEFE);
+        
+        // Draw close button (X) with hover effect
+        int closeX = guiLeft + GUI_WIDTH - 35;
+        int closeY = guiTop + 15;
+        boolean isCloseHovered = transformedMouseX >= closeX && transformedMouseX <= closeX + 25 && transformedMouseY >= closeY && transformedMouseY <= closeY + 25;
+        drawRoundedButton(context, closeX, closeY, 25, 25, isCloseHovered ? 0xFFE63946 : 0xFF252220);
+        context.drawCenteredTextWithShadow(this.textRenderer, "✕", closeX + 12, closeY + 9, 0xFFFEFEFE);
+        
+        // Draw category tabs with modern styling
+        int tabX = guiLeft + 15;
+        int tabY = guiTop + 65;
+        int tabIndex = 0;
+        int tabWidth = 90; // Increased from 70
+        int tabSpacing = 95; // Increased spacing between tabs
+        
+        for (ModuleCategory category : ModuleCategory.values()) {
+            boolean isSelected = category == selectedCategory;
+            boolean isTabHovered = transformedMouseX >= tabX + (tabIndex * tabSpacing) && transformedMouseX <= tabX + (tabIndex * tabSpacing) + tabWidth &&
+                                   transformedMouseY >= tabY && transformedMouseY <= tabY + 30;
+            
+            int bgColor = isSelected ? 0xFFFEFEFE : (isTabHovered ? 0xFF252220 : 0xFF1A1614);
+            drawRoundedButton(context, tabX + (tabIndex * tabSpacing), tabY, tabWidth, 30, bgColor);
+            
+            // Draw category icon based on index
+            int iconSize = 12;
+            int iconX = tabX + (tabIndex * tabSpacing) + 8;
+            int iconY = tabY + 9;
+            
+            
+            // Map icons to categories: HUD, Visual, Movement, Player, Misc
+            if (tabIndex == 0) { // HUD
+                drawTexture(context, ICON_1, iconX, iconY, iconSize, iconSize);
+            } else if (tabIndex == 1) { // Visual
+                drawTexture(context, ICON_2, iconX, iconY, iconSize, iconSize);
+            } else if (tabIndex == 2) { // Movement
+                drawTexture(context, ICON_4, iconX, iconY, iconSize, iconSize);
+            } else if (tabIndex == 3) { // Player
+                drawTexture(context, ICON_4, iconX, iconY, iconSize, iconSize);
+            } else if (tabIndex == 4) { // Misc
+                drawTexture(context, ULTRA_ICON, iconX, iconY, iconSize, iconSize);
+            }
+            
+            
+            String categoryName = category.name().charAt(0) + category.name().substring(1).toLowerCase();
+            int textColor = isSelected ? 0xFF100C08 : 0xFFAAAAAA;
+            
+            // Draw category text without shadow to avoid double font effect
+            drawStyledText(context, categoryName, tabX + (tabIndex * tabSpacing) + 24, tabY + 11, textColor, false);
+            
+            tabIndex++;
+        }
+        
+        // Enable scissor (clipping) to keep cards within GUI bounds
+        // In 1.21.6, enableScissor uses logical scaled GUI coordinates (not framebuffer coordinates)
+        int scissorMinX = guiLeft;
+        int scissorMinY = guiTop + 105;
+        int scissorMaxX = guiLeft + GUI_WIDTH;
+        int scissorMaxY = guiTop + GUI_HEIGHT;
+        context.enableScissor(scissorMinX, scissorMinY, scissorMaxX, scissorMaxY);
+        
+        // Draw module cards with scrolling support
+        int startX = guiLeft + 20;
+        int startY = guiTop + 110 - (int)scrollOffset;
+        int cardIndex = 0;
+        
+        for (Module module : modules) {
+            if (module.getCategory() == selectedCategory) {
+                int row = cardIndex / CARDS_PER_ROW;
+                int col = cardIndex % CARDS_PER_ROW;
+                int cardX = startX + (col * (CARD_WIDTH + CARD_SPACING));
+                int cardY = startY + (row * (CARD_HEIGHT + CARD_SPACING));
+                
+                // Only render if card is within bounds
+                if (cardY + CARD_HEIGHT > guiTop + 105 && cardY < guiTop + GUI_HEIGHT) {
+                    // Check if card is hovered
+                    boolean isCardHovered = transformedMouseX >= cardX && transformedMouseX <= cardX + CARD_WIDTH &&
+                                           transformedMouseY >= cardY && transformedMouseY <= cardY + CARD_HEIGHT;
+                    
+                    // Draw solid card background first
+                    drawRoundedRect(context, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, 0xFF252220);
+                    
+                    // Draw card texture as overlay with pink hue for first 3 cards
+                    if (cardIndex < 3) {
+                        // Pink hue for new cards (pink tint with 25% opacity)
+                        drawTextureWithColor(context, CARD_TEXTURE, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, 0x40FF66B2);
+                    } else {
+                        // Normal white for other cards (25% opacity)
+                        drawTextureWithColor(context, CARD_TEXTURE, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, 0x40FFFFFF);
+                    }
+                    
+                    // Draw subtle border on hover
+                    if (isCardHovered) {
+                        drawRoundedBorder(context, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, 0xFF2A2622);
+                    }
+                    
+                    // Draw module name with better styling (White)
+                    drawStyledText(context, module.getName(), cardX + 10, cardY + 40, 0xFFFEFEFE, true);
+                    
+                    // Draw module description
+                    String desc = "Toggle to " + (module.isEnabled() ? "disable" : "enable");
+                    drawStyledText(context, desc, cardX + 10, cardY + 55, 0xFF888888, true);
+                    
+                    // Draw settings icon
+                    drawStyledText(context, "⚙", cardX + CARD_WIDTH - 25, cardY + 10, 0xFF888888, true);
+                    
+                    // Draw toggle button with rounded corners
+                    int buttonBgX = cardX + 10;
+                    int buttonBgY = cardY + CARD_HEIGHT - 38;
+                    int buttonBgWidth = CARD_WIDTH - 20;
+                    int buttonBgHeight = 28;
+                    
+                    boolean isEnabled = module.isEnabled();
+                    int buttonColor = isEnabled ? 0xCCFEFEFE : 0xFF252220; // Reduced opacity for enabled button (CC = 80%)
+                    drawRoundedButton(context, buttonBgX, buttonBgY, buttonBgWidth, buttonBgHeight, buttonColor);
+                    
+                    String buttonText = isEnabled ? "ENABLED" : "DISABLED";
+                    int buttonTextColor = isEnabled ? 0xFF100C08 : 0xFF888888;
+                    drawCenteredStyledText(context, buttonText, buttonBgX + buttonBgWidth / 2, buttonBgY + 10, buttonTextColor, false);
+                }
+                
+                cardIndex++;
+            }
+        }
+        
+        // Disable scissor (clipping)
+        context.disableScissor();
+        
+        matrices.popMatrix();
+    }
+    
+    // -------------------------------------------------------------------------
+    // Texture helper — for 1.21.3+
+    // -------------------------------------------------------------------------
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        double currentScale = client.getWindow().getScaleFactor();
+        double targetScale = FIXED_GUI_SCALE;
+        float scaleFactor = (float)(targetScale / currentScale);
+        
+        int mx = (int)(mouseX / scaleFactor);
+        int my = (int)(mouseY / scaleFactor);
+        
+        // Check close button
+        int closeX = guiLeft + GUI_WIDTH - 35;
+        int closeY = guiTop + 10;
+        if (mx >= closeX && mx <= closeX + 25 && my >= closeY && my <= closeY + 25) {
+            this.close();
+            return true;
+        }
+        
+        // Check category tab clicks
+        int tabX = guiLeft + 15;
+        int tabY = guiTop + 65;
+        int tabIndex = 0;
+        int tabWidth = 90;
+        int tabSpacing = 95;
+        
+        for (ModuleCategory category : ModuleCategory.values()) {
+            if (mx >= tabX + (tabIndex * tabSpacing) && mx <= tabX + (tabIndex * tabSpacing) + tabWidth &&
+                my >= tabY && my <= tabY + 30) {
+                selectedCategory = category;
+                return true;
+            }
+            tabIndex++;
+        }
+        
+        // Check module card clicks
+        int startX = guiLeft + 20;
+        int startY = guiTop + 110 - (int)scrollOffset;
+        int cardIndex = 0;
+        
+        for (Module module : modules) {
+            if (module.getCategory() == selectedCategory) {
+                int row = cardIndex / CARDS_PER_ROW;
+                int col = cardIndex % CARDS_PER_ROW;
+                int cardX = startX + (col * (CARD_WIDTH + CARD_SPACING));
+                int cardY = startY + (row * (CARD_HEIGHT + CARD_SPACING));
+                
+                // Check if toggle button was clicked
+                int buttonBgX = cardX + 10;
+                int buttonBgY = cardY + CARD_HEIGHT - 38;
+                int buttonBgWidth = CARD_WIDTH - 20;
+                int buttonBgHeight = 28;
+                
+                if (mx >= buttonBgX && mx <= buttonBgX + buttonBgWidth &&
+                    my >= buttonBgY && my <= buttonBgY + buttonBgHeight) {
+                    module.toggle();
+                    return true;
+                }
+                
+                cardIndex++;
+            }
+        }
+        
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        // Calculate total content height
+        int moduleCount = 0;
+        for (Module module : modules) {
+            if (module.getCategory() == selectedCategory) {
+                moduleCount++;
+            }
+        }
+        
+        int rows = (int) Math.ceil(moduleCount / (double) CARDS_PER_ROW);
+        int totalHeight = rows * (CARD_HEIGHT + CARD_SPACING);
+        int visibleHeight = GUI_HEIGHT - 120; // Account for header and tabs
+        int maxScroll = Math.max(0, totalHeight - visibleHeight);
+        
+        // Update scroll offset
+        scrollOffset -= verticalAmount * 20; // Scroll speed
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
+        
+        return true;
+    }
+
+    @Override
+    public boolean shouldPause() {
+        return false;
+    }
+    
+    // Helper method to draw rounded rectangles
+    private void drawRoundedRect(DrawContext context, int x, int y, int width, int height, int color) {
+        // Draw main rectangle (stay within bounds)
+        context.fill(x + 2, y, x + width - 2, y + height, color);
+        context.fill(x, y + 2, x + width, y + height - 2, color);
+        
+        // Draw corners (2x2 pixels for subtle rounding)
+        context.fill(x + 1, y + 1, x + 2, y + 2, color);
+        context.fill(x + width - 2, y + 1, x + width - 1, y + 2, color);
+        context.fill(x + 1, y + height - 2, x + 2, y + height - 1, color);
+        context.fill(x + width - 2, y + height - 2, x + width - 1, y + height - 1, color);
+    }
+    
+    // Helper method to draw rounded buttons with better styling
+    private void drawRoundedButton(DrawContext context, int x, int y, int width, int height, int color) {
+        drawRoundedRect(context, x, y, width, height, color);
+    }
+    
+    // Helper method to draw rounded borders
+    private void drawRoundedBorder(DrawContext context, int x, int y, int width, int height, int color) {
+        // Top and bottom
+        context.fill(x + 2, y, x + width - 2, y + 1, color);
+        context.fill(x + 2, y + height - 1, x + width - 2, y + height, color);
+        
+        // Left and right
+        context.fill(x, y + 2, x + 1, y + height - 2, color);
+        context.fill(x + width - 1, y + 2, x + width, y + height - 2, color);
+        
+        // Corners
+        context.fill(x + 1, y + 1, x + 2, y + 2, color);
+        context.fill(x + width - 2, y + 1, x + width - 1, y + 2, color);
+        context.fill(x + 1, y + height - 2, x + 2, y + height - 1, color);
+        context.fill(x + width - 2, y + height - 2, x + width - 1, y + height - 1, color);
+    }
+    
+    // Texture helper for 1.21.6+
+    private void drawTexture(DrawContext context, Identifier texture, int x, int y, int width, int height) {
+        context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, 
+                          texture, x, y, 0f, 0f, width, height, width, height);
+    }
+    
+    // Texture helper with color/opacity for 1.21.6+
+    private void drawTextureWithColor(DrawContext context, Identifier texture, int x, int y, int width, int height, int color) {
+        context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, 
+                          texture, x, y, 0f, 0f, width, height, width, height, color);
+    }
+}

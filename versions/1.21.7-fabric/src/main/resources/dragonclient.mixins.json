@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.dragonclient.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "MixinGameRenderer",
+    "MixinInGameHud",
+    "MixinPlayerEntity",
+    "MixinClientPlayerEntity",
+    "MixinMouseHandler",
+    "MixinChatScreen",
+    "MixinGameOptions",
+    "MixinAbstractClientPlayerEntity"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
