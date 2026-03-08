@@ -4,7 +4,8 @@ on:
   push:
     branches: [ main, master ]
     paths:
-      - 'dragon-client-mod/**'
+      - 'versions/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 jobs:
@@ -53,25 +54,24 @@ jobs:
       
       - name: Update version in gradle.properties
         run: |
-          cd dragon-client-mod/versions/${{ matrix.minecraft }}-fabric
+          cd versions/${{ matrix.minecraft }}-fabric
           sed -i "s/mod_version=.*/mod_version=${{ needs.version.outputs.version }}/" gradle.properties
       
       - name: Build with Gradle
         run: |
-          cd dragon-client-mod
           chmod +x gradlew
           ./gradlew :${{ matrix.minecraft }}-fabric:build
       
       - name: Rename JAR
         run: |
-          cd dragon-client-mod/versions/${{ matrix.minecraft }}-fabric/build/libs
+          cd versions/${{ matrix.minecraft }}-fabric/build/libs
           mv dragon-client-${{ matrix.minecraft }}-*.jar dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: dragon-client-${{ matrix.minecraft }}
-          path: dragon-client-mod/versions/${{ matrix.minecraft }}-fabric/build/libs/dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar
+          path: versions/${{ matrix.minecraft }}-fabric/build/libs/dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar
 
   release:
     needs: [version, build]
