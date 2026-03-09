@@ -8,7 +8,7 @@ public class PotionEffectsHud extends HudModule {
     
     public PotionEffectsHud() {
         super("Potion Effects", "Displays active potion effects");
-        this.x = 450;  // Far right, below clock
+        this.x = 360;  // Far right, below clock
         this.y = 25;
     }
 
@@ -19,9 +19,6 @@ public class PotionEffectsHud extends HudModule {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
         
-        // Calculate position from right edge
-        int windowWidth = client.getWindow().getScaledWidth();
-        
         int yOffset = 0;
         for (StatusEffectInstance effect : client.player.getStatusEffects()) {
             String name = effect.getEffectType().value().getName().getString();
@@ -29,24 +26,23 @@ public class PotionEffectsHud extends HudModule {
             String text = name + " " + formatTime(duration);
             
             int textWidth = client.textRenderer.getWidth(text);
-            int rightX = (windowWidth / 4) - textWidth - 5;
             
             // Draw background - #1D1C1C at 50% opacity
             int textHeight = client.textRenderer.fontHeight;
-            context.fill(rightX - 6, y + yOffset - 6, rightX + textWidth + 6, y + yOffset + textHeight + 6, 0x801D1C1C);
+            context.fill(x - 6, y + yOffset - 6, x + textWidth + 6, y + yOffset + textHeight + 6, 0x801D1C1C);
             
             // Draw outer border - #161616 at 100% opacity
-            context.fill(rightX - 6, y + yOffset - 6, rightX + textWidth + 6, y + yOffset - 5, 0xFF161616); // Top
-            context.fill(rightX - 6, y + yOffset + textHeight + 5, rightX + textWidth + 6, y + yOffset + textHeight + 6, 0xFF161616); // Bottom
-            context.fill(rightX - 6, y + yOffset - 6, rightX - 5, y + yOffset + textHeight + 6, 0xFF161616); // Left
-            context.fill(rightX + textWidth + 5, y + yOffset - 6, rightX + textWidth + 6, y + yOffset + textHeight + 6, 0xFF161616); // Right
+            context.fill(x - 6, y + yOffset - 6, x + textWidth + 6, y + yOffset - 5, 0xFF161616); // Top
+            context.fill(x - 6, y + yOffset + textHeight + 5, x + textWidth + 6, y + yOffset + textHeight + 6, 0xFF161616); // Bottom
+            context.fill(x - 6, y + yOffset - 6, x - 5, y + yOffset + textHeight + 6, 0xFF161616); // Left
+            context.fill(x + textWidth + 5, y + yOffset - 6, x + textWidth + 6, y + yOffset + textHeight + 6, 0xFF161616); // Right
             
             // Draw inset shadow - Dark gray for depth
-            context.fill(rightX - 5, y + yOffset - 5, rightX + textWidth + 5, y + yOffset - 4, 0x80000000); // Top inner shadow
-            context.fill(rightX - 5, y + yOffset - 5, rightX - 4, y + yOffset + textHeight + 5, 0x80000000); // Left inner shadow
+            context.fill(x - 5, y + yOffset - 5, x + textWidth + 5, y + yOffset - 4, 0x80000000); // Top inner shadow
+            context.fill(x - 5, y + yOffset - 5, x - 4, y + yOffset + textHeight + 5, 0x80000000); // Left inner shadow
             
             // Draw text - White at 100% opacity without shadow
-            context.drawText(client.textRenderer, text, rightX, y + yOffset, 0xFFFFFFFF, false);
+            context.drawText(client.textRenderer, text, x, y + yOffset, 0xFFFFFFFF, false);
             yOffset += textHeight + 2;
         }
         

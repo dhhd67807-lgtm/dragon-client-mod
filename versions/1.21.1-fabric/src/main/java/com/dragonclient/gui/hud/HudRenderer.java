@@ -27,38 +27,51 @@ public class HudRenderer {
         try {
             renderCallCount++;
             
-            // Get stack trace to see who called us
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            String caller = stackTrace.length > 2 ? stackTrace[2].toString() : "unknown";
-            
             if (debugLog != null && renderCallCount % 60 == 0) {
-                debugLog.println("HudRenderer.render() call #" + renderCallCount + " from: " + caller);
-                debugLog.flush();
+                debugLog.println("\n=== HUD RENDER CYCLE #" + renderCallCount + " ===");
+                debugLog.println("Timestamp: " + System.currentTimeMillis());
             }
             
             int enabledCount = 0;
-            for (Module module : DragonClientMod.getInstance().getModuleManager().getEnabledModules()) {
+            int totalModules = 0;
+            
+            for (Module module : DragonClientMod.getInstance().getModuleManager().getModules()) {
                 if (module instanceof HudModule) {
+                    totalModules++;
                     HudModule hudModule = (HudModule) module;
-                    enabledCount++;
                     
-                    // Apply module-specific scaling
-                    var matrices = context.getMatrices();
-                    matrices.push();
+                    if (debugLog != null && renderCallCount % 60 == 0) {
+                        debugLog.println("Module: " + hudModule.getName() + 
+                                       " | Enabled: " + hudModule.isEnabled() +
+                                       " | X: " + hudModule.getX() + 
+                                       " | Y: " + hudModule.getY() +
+                                       " | Width: " + hudModule.getWidth() +
+                                       " | Height: " + hudModule.getHeight() +
+                                       " | Scale: " + hudModule.getScale());
+                    }
                     
-                    float moduleScale = hudModule.getScale() / 4.0f; // Normalize to base scale (4.0)
-                    matrices.translate((float)hudModule.getX(), (float)hudModule.getY(), 0f);
-                    matrices.scale(moduleScale, moduleScale, 1.0f);
-                    matrices.translate((float)-hudModule.getX(), (float)-hudModule.getY(), 0f);
-                    
-                    hudModule.render(context, tickDelta);
-                    
-                    matrices.pop();
+                    if (hudModule.isEnabled()) {
+                        enabledCount++;
+                        
+                        // Apply module-specific scaling
+                        var matrices = context.getMatrices();
+                        matrices.push();
+                        
+                        float moduleScale = hudModule.getScale() / 4.0f; // Normalize to base scale (4.0)
+                        matrices.translate((float)hudModule.getX(), (float)hudModule.getY(), 0f);
+                        matrices.scale(moduleScale, moduleScale, 1.0f);
+                        matrices.translate((float)-hudModule.getX(), (float)-hudModule.getY(), 0f);
+                        
+                        hudModule.render(context, tickDelta);
+                        
+                        matrices.pop();
+                    }
                 }
             }
             
-            if (debugLog != null && enabledCount == 0 && renderCallCount % 60 == 0) {
-                debugLog.println("No enabled HUD modules found!");
+            if (debugLog != null && renderCallCount % 60 == 0) {
+                debugLog.println("Total HUD modules: " + totalModules + " | Enabled: " + enabledCount);
+                debugLog.flush();
             }
         } catch (Exception e) {
             if (debugLog != null) {

@@ -58,13 +58,18 @@ public abstract class MixinMouse {
             
             Screen screen = client.currentScreen;
             String screenName = screen.getClass().getSimpleName();
+            String fullClassName = screen.getClass().getName();
             
             if (mouseLog != null) {
                 mouseLog.println("  Screen type: " + screenName);
+                mouseLog.println("  Full class name: " + fullClassName);
             }
             
-            // Handle HudEditorScreen and DragonClientScreen
-            if (!screenName.equals("HudEditorScreen") && !screenName.equals("DragonClientScreen")) {
+            // Handle HudEditorScreen and DragonClientScreen (check both simple and full class names)
+            boolean isHudEditor = screenName.equals("HudEditorScreen") || fullClassName.contains("HudEditorScreen");
+            boolean isDragonClient = screenName.equals("DragonClientScreen") || fullClassName.contains("DragonClientScreen");
+            
+            if (!isHudEditor && !isDragonClient) {
                 if (mouseLog != null) {
                     mouseLog.println("  SKIP: Not HudEditorScreen or DragonClientScreen");
                     mouseLog.flush();
@@ -76,13 +81,15 @@ public abstract class MixinMouse {
             double mouseX = this.x * (double)client.getWindow().getScaledWidth() / (double)client.getWindow().getWidth();
             double mouseY = this.y * (double)client.getWindow().getScaledHeight() / (double)client.getWindow().getHeight();
             
+            String detectedScreen = isHudEditor ? "HudEditorScreen" : "DragonClientScreen";
+            
             if (mouseLog != null) {
-                mouseLog.println("  " + screenName + " detected!");
+                mouseLog.println("  " + detectedScreen + " detected!");
                 mouseLog.println("  button=" + button + " action=" + action);
                 mouseLog.println("  mouseX=" + mouseX + " mouseY=" + mouseY);
             }
             
-            System.out.println("[DragonClient] Mouse event - button=" + button + " action=" + action + " x=" + mouseX + " y=" + mouseY);
+            System.out.println("[DragonClient] Mouse event on " + detectedScreen + " - button=" + button + " action=" + action + " x=" + mouseX + " y=" + mouseY);
             
             // action: 1 = press, 0 = release
             if (action == 1) {
@@ -157,9 +164,13 @@ public abstract class MixinMouse {
             
             Screen screen = client.currentScreen;
             String screenName = screen.getClass().getSimpleName();
+            String fullClassName = screen.getClass().getName();
             
             // Only handle HudEditorScreen and DragonClientScreen
-            if (!screenName.equals("HudEditorScreen") && !screenName.equals("DragonClientScreen")) {
+            boolean isHudEditor = screenName.equals("HudEditorScreen") || fullClassName.contains("HudEditorScreen");
+            boolean isDragonClient = screenName.equals("DragonClientScreen") || fullClassName.contains("DragonClientScreen");
+            
+            if (!isHudEditor && !isDragonClient) {
                 return;
             }
             

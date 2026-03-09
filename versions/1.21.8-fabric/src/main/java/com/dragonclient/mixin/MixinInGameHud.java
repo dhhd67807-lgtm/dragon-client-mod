@@ -19,25 +19,27 @@ public class MixinInGameHud {
             MinecraftClient client = MinecraftClient.getInstance();
             
             // Don't render HUD if HUD editor is open
-            if (client.currentScreen != null && client.currentScreen.getClass().getSimpleName().equals("HudEditorScreen")) {
+            if (client.currentScreen instanceof com.dragonclient.gui.HudEditorScreen) {
                 return;
             }
             
             DragonClientMod mod = DragonClientMod.getInstance();
             if (mod != null && mod.getHudRenderer() != null) {
-                // Save current matrix state (1.21.6-1.21.10 use pushMatrix/popMatrix for 2D)
+                System.out.println("MixinInGameHud.onRender called - GUI scale: " + client.getWindow().getScaleFactor());
+                
+                // Save current matrix state (1.21.6+ use pushMatrix/popMatrix)
                 context.getMatrices().pushMatrix();
                 
                 // Reset to window coordinates - scale will be applied per-module
                 double guiScale = client.getWindow().getScaleFactor();
                 float baseScale = 4.0f;  // Base 4x scale
-                // 1.21.6-1.21.10 use 2-parameter scale (2D matrices)
+                // 1.21.6+ use 2-parameter scale
                 context.getMatrices().scale(baseScale / (float)guiScale, baseScale / (float)guiScale);
                 
                 // Render HUD
                 mod.getHudRenderer().render(context, 1.0f);
                 
-                // Restore matrix (1.21.6-1.21.10 use pushMatrix/popMatrix)
+                // Restore matrix (1.21.6+ use pushMatrix/popMatrix)
                 context.getMatrices().popMatrix();
             }
         } catch (Exception e) {

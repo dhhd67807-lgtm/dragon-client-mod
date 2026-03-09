@@ -8,7 +8,7 @@ public class KeystrokesHud extends HudModule {
     
     public KeystrokesHud() {
         super("Keystrokes", "Displays key presses");
-        this.x = 450;  // Far right bottom
+        this.x = 340;  // Far right bottom
         this.y = 280;
         this.width = 60;
         this.height = 60;
@@ -21,20 +21,16 @@ public class KeystrokesHud extends HudModule {
         MinecraftClient client = MinecraftClient.getInstance();
         GameOptions options = client.options;
         
-        // Calculate position from right edge
-        int windowWidth = client.getWindow().getScaledWidth();
-        int rightX = (windowWidth / 4) - 65;  // 65 pixels from right (60 width + 5 margin)
-        
         // W key
-        drawKey(context, "W", rightX + 20, y, options.forwardKey.isPressed());
+        drawKey(context, "W", x + 20, y, options.forwardKey.isPressed());
         // A key
-        drawKey(context, "A", rightX, y + 20, options.leftKey.isPressed());
+        drawKey(context, "A", x, y + 20, options.leftKey.isPressed());
         // S key
-        drawKey(context, "S", rightX + 20, y + 20, options.backKey.isPressed());
+        drawKey(context, "S", x + 20, y + 20, options.backKey.isPressed());
         // D key
-        drawKey(context, "D", rightX + 40, y + 20, options.rightKey.isPressed());
+        drawKey(context, "D", x + 40, y + 20, options.rightKey.isPressed());
         // Space
-        drawKey(context, "---", rightX, y + 40, options.jumpKey.isPressed(), 60);
+        drawKey(context, "---", x, y + 40, options.jumpKey.isPressed(), 60);
     }
 
     private void drawKey(DrawContext context, String key, int x, int y, boolean pressed) {

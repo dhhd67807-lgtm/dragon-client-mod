@@ -19,7 +19,7 @@ public class CosmeticsScreen extends Screen {
     private int guiTop;
     private int scaledWidth;
     private int scaledHeight;
-    private String selectedTab = "CAPES"; // CAPES or SKINS
+    private String selectedTab = "CAPES"; // Only CAPES for now
     private TextRenderer bebasFont;
     private float playerRotation = 0;
     private boolean isDragging = false;
@@ -121,28 +121,11 @@ public class CosmeticsScreen extends Screen {
         drawRoundedButton(context, closeX, closeY, 25, 25, isCloseHovered ? 0xFFE63946 : 0xFF252220);
         context.drawCenteredTextWithShadow(this.textRenderer, "✕", closeX + 12, closeY + 9, 0xFFFEFEFE);
         
-        // Draw tabs (CAPES and SKINS) - centered horizontally
-        String[] tabs = {"CAPES", "SKINS"};
-        int totalTabsWidth = (tabs.length * 90) + ((tabs.length - 1) * 5); // 90px per tab + 5px spacing
-        int tabX = guiLeft + (GUI_WIDTH - totalTabsWidth) / 2; // Center horizontally
-        int tabY = guiTop + 65;
+        // No tabs - only capes
         
-        for (int i = 0; i < tabs.length; i++) {
-            boolean isSelected = tabs[i].equals(selectedTab);
-            boolean isTabHovered = transformedMouseX >= tabX + (i * 95) && transformedMouseX <= tabX + (i * 95) + 90 &&
-                                   transformedMouseY >= tabY && transformedMouseY <= tabY + 30;
-            
-            int bgColor = isSelected ? 0xFFFEFEFE : (isTabHovered ? 0xFF252220 : 0xFF1A1614);
-            drawRoundedButton(context, tabX + (i * 95), tabY, 90, 30, bgColor);
-            
-            int textColor = isSelected ? 0xFF100C08 : 0xFFAAAAAA;
-            int textWidth = this.textRenderer.getWidth(tabs[i]);
-            drawStyledText(context, tabs[i], tabX + (i * 95) + (90 - textWidth) / 2, tabY + 11, textColor, false); // Center text
-        }
-        
-        // Draw content area
-        int contentY = guiTop + 110;
-        int contentHeight = GUI_HEIGHT - 120;
+        // Draw content area (moved up to remove spacing)
+        int contentY = guiTop + 60; // Changed from 110 to 60
+        int contentHeight = GUI_HEIGHT - 70; // Adjusted
         
         // Draw player preview on left side (smaller)
         int previewX = guiLeft + 30;
@@ -173,12 +156,12 @@ public class CosmeticsScreen extends Screen {
         drawRoundedBorder(context, gridX, gridY, gridWidth, gridHeight, 0xFF2A2622);
         
         // Draw cosmetics items in grid (pagination - 3 per page)
-        String categoryLabel = selectedTab.equals("CAPES") ? "AVAILABLE CAPES" : "AVAILABLE SKINS";
+        String categoryLabel = "AVAILABLE CAPES";
         int labelWidth = this.textRenderer.getWidth(categoryLabel);
         drawStyledText(context, categoryLabel, gridX + (gridWidth - labelWidth) / 2, gridY + 10, 0xFFAAAAAA, false);
         
         // Calculate pagination
-        int totalItems = selectedTab.equals("CAPES") ? 4 : 0;
+        int totalItems = 4; // 4 capes
         int totalPages = (int) Math.ceil(totalItems / (double) ITEMS_PER_PAGE);
         int startIndex = currentPage * ITEMS_PER_PAGE;
         int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
@@ -240,8 +223,8 @@ public class CosmeticsScreen extends Screen {
         int startCardX = gridX + 10;
         int startCardY = gridY + 50;
         
-        for (int i = startIndex; i < endIndex; i++) { // Show items for current page
-            int displayIndex = i - startIndex; // Index within current page
+        for (int i = startIndex; i < endIndex; i++) {
+            int displayIndex = i - startIndex;
             int row = displayIndex / cardsPerRow;
             int col = displayIndex % cardsPerRow;
             int cardX = startCardX + (col * (cardWidth + cardSpacing));
@@ -250,29 +233,24 @@ public class CosmeticsScreen extends Screen {
             boolean isCardHovered = transformedMouseX >= cardX && transformedMouseX <= cardX + cardWidth &&
                                    transformedMouseY >= cardY && transformedMouseY <= cardY + cardHeight;
             
-            boolean isCardEquipped = (selectedTab.equals("CAPES") && selectedCapeIndex == i);
+            boolean isCardEquipped = (selectedCapeIndex == i);
             
-            // Draw card background (white with 50% opacity if equipped, dark if not)
-            int cardBgColor = isCardEquipped ? 0x80FEFEFE : 0xFF252220; // 0x80 = 50% opacity
+            int cardBgColor = isCardEquipped ? 0x80FEFEFE : 0xFF252220;
             drawRoundedRect(context, cardX, cardY, cardWidth, cardHeight, cardBgColor);
             
-            // Draw border
             if (isCardEquipped) {
                 drawRoundedBorder(context, cardX, cardY, cardWidth, cardHeight, 0xFFDDDDDD);
             } else if (isCardHovered) {
                 drawRoundedBorder(context, cardX, cardY, cardWidth, cardHeight, 0xFF2A2622);
             }
             
-            // Draw cosmetic preview area with background
             int previewBoxX = cardX + 10;
             int previewBoxY = cardY + 10;
             int previewBoxWidth = cardWidth - 20;
-            int previewBoxHeight = 110; // Increased from 100
+            int previewBoxHeight = 110;
             drawRoundedRect(context, previewBoxX, previewBoxY, previewBoxWidth, previewBoxHeight, 0xFF1A1614);
             
-            // Draw cape preview if in CAPES tab - render dummy player from back
-            if (selectedTab.equals("CAPES") && dummyPlayer != null) {
-                // Set cape on dummy player based on index
+            if (dummyPlayer != null) {
                 Identifier capeTexture;
                 if (i == 0) capeTexture = CAPE_1;
                 else if (i == 1) capeTexture = CAPE_2;
@@ -280,43 +258,36 @@ public class CosmeticsScreen extends Screen {
                 else capeTexture = CAPE_4;
                 
                 dummyPlayer.setCustomCape(capeTexture);
-                
-                // Update dummy player state for proper cape rendering
                 dummyPlayer.age++;
-                dummyPlayer.tick(); // Update cape physics
+                dummyPlayer.tick();
                 
-                // Render larger player model showing cape from back/side view (zoomed in)
                 int modelX = previewBoxX + previewBoxWidth / 2;
                 int modelY = previewBoxY + previewBoxHeight + 20;
-                int previewModelSize = 50; // Zoomed in
+                int previewModelSize = 50;
                 
-                // Save matrix state
                 var previewMatrices = context.getMatrices();
                 previewMatrices.push();
                 
-                // Enable scissor for preview box
                 int previewScissorX = (int)(previewBoxX * scaleFactor);
                 int previewScissorY = (int)(previewBoxY * scaleFactor);
                 int previewScissorWidth = (int)(previewBoxWidth * scaleFactor);
                 int previewScissorHeight = (int)(previewBoxHeight * scaleFactor);
                 context.enableScissor(previewScissorX, previewScissorY, previewScissorX + previewScissorWidth, previewScissorY + previewScissorHeight);
                 
-                // Render dummy player from back-side angle (135 degrees) to show cape better
                 drawEntity(context, modelX, modelY, previewModelSize, 135.0f, 0, dummyPlayer);
                 
                 context.disableScissor();
                 previewMatrices.pop();
             }
             
-            // Draw equip button (moved up to reduce gap)
             int equipBtnX = cardX + 10;
-            int equipBtnY = cardY + cardHeight - 35; // Adjusted for bigger card
+            int equipBtnY = cardY + cardHeight - 35;
             int equipBtnWidth = cardWidth - 20;
             boolean isEquipHovered = transformedMouseX >= equipBtnX && transformedMouseX <= equipBtnX + equipBtnWidth &&
                                     transformedMouseY >= equipBtnY && transformedMouseY <= equipBtnY + 20;
             
-            boolean isEquipped = (selectedTab.equals("CAPES") && selectedCapeIndex == i);
-            int btnBgColor = isEquipped ? 0xFFE63946 : (isEquipHovered ? 0xCCFEFEFE : 0xFF1A1614); // Red when equipped
+            boolean isEquipped = (selectedCapeIndex == i);
+            int btnBgColor = isEquipped ? 0xFFE63946 : (isEquipHovered ? 0xCCFEFEFE : 0xFF1A1614);
             drawRoundedButton(context, equipBtnX, equipBtnY, equipBtnWidth, 20, btnBgColor);
             int btnTextColor = isEquipped ? 0xFFFEFEFE : (isEquipHovered ? 0xFF100C08 : 0xFFAAAAAA);
             String btnText = isEquipped ? "EQUIPPED" : "EQUIP";
@@ -347,34 +318,20 @@ public class CosmeticsScreen extends Screen {
             return true;
         }
         
-        // Check tab clicks
-        String[] tabs = {"CAPES", "SKINS"};
-        int totalTabsWidth = (tabs.length * 90) + ((tabs.length - 1) * 5);
-        int tabX = guiLeft + (GUI_WIDTH - totalTabsWidth) / 2; // Match centered position
-        int tabY = guiTop + 65;
-        
-        for (int i = 0; i < tabs.length; i++) {
-            if (transformedMouseX >= tabX + (i * 95) && transformedMouseX <= tabX + (i * 95) + 90 &&
-                transformedMouseY >= tabY && transformedMouseY <= tabY + 30) {
-                selectedTab = tabs[i];
-                scrollOffset = 0; // Reset scroll when changing tabs
-                currentPage = 0; // Reset page when changing tabs
-                return true;
-            }
-        }
+        // Check tab clicks - no tabs to click
         
         // Check equip button clicks on cosmetic cards
-        int gridX2 = guiLeft + 230; // Match the new gridX
-        int gridY2 = guiTop + 110 + 20;
+        int gridX2 = guiLeft + 230;
+        int gridY2 = guiTop + 60 + 20; // Match new contentY
         
-        int cardWidth = 130; // Match the new card width
-        int cardHeight = 180; // Match the new card height
+        int cardWidth = 130;
+        int cardHeight = 180;
         int cardSpacing = 15;
         int cardsPerRow = 3;
-        int startCardX = gridX2 + 10; // Match the new startCardX
-        int startCardY = gridY2 + 50; // Match the new startCardY
+        int startCardX = gridX2 + 10;
+        int startCardY = gridY2 + 50;
         
-        int totalItems = selectedTab.equals("CAPES") ? 4 : 0;
+        int totalItems = 4; // 4 capes
         int startIndex = currentPage * ITEMS_PER_PAGE;
         int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
         
@@ -386,23 +343,21 @@ public class CosmeticsScreen extends Screen {
             int cardY = startCardY + (row * (cardHeight + cardSpacing));
             
             int equipBtnX = cardX + 10;
-            int equipBtnY = cardY + cardHeight - 35; // Match the render position
+            int equipBtnY = cardY + cardHeight - 35;
             int equipBtnWidth = cardWidth - 20;
             
             if (transformedMouseX >= equipBtnX && transformedMouseX <= equipBtnX + equipBtnWidth &&
                 transformedMouseY >= equipBtnY && transformedMouseY <= equipBtnY + 20) {
-                if (selectedTab.equals("CAPES")) {
-                    selectedCapeIndex = (selectedCapeIndex == i) ? -1 : i; // Toggle equip
-                    CapeManager.getInstance().setEquippedCape(selectedCapeIndex);
-                }
+                selectedCapeIndex = (selectedCapeIndex == i) ? -1 : i;
+                CapeManager.getInstance().setEquippedCape(selectedCapeIndex);
                 return true;
             }
         }
         
         // Check pagination dot clicks
         int gridX3 = guiLeft + 230;
-        int gridY3 = guiTop + 110 + 20;
-        int gridHeight3 = GUI_HEIGHT - 120 - 40;
+        int gridY3 = guiTop + 60 + 20; // Match new contentY
+        int gridHeight3 = GUI_HEIGHT - 70 - 40; // Match new contentHeight
         int capsuleWidth = 60;
         int capsuleHeight = 20;
         int capsuleX = gridX3 + ((GUI_WIDTH - 250) - capsuleWidth) / 2;
@@ -410,7 +365,7 @@ public class CosmeticsScreen extends Screen {
         
         if (transformedMouseX >= capsuleX && transformedMouseX <= capsuleX + capsuleWidth &&
             transformedMouseY >= capsuleY && transformedMouseY <= capsuleY + capsuleHeight) {
-            int totalItems2 = selectedTab.equals("CAPES") ? 4 : 0;
+            int totalItems2 = 4; // 4 capes
             int totalPages = (int) Math.ceil(totalItems2 / (double) ITEMS_PER_PAGE);
             
             // Calculate which dot was clicked
@@ -474,14 +429,14 @@ public class CosmeticsScreen extends Screen {
     
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        int totalItems = selectedTab.equals("CAPES") ? 4 : 0;
-        int cardHeight = 180; // Match the new card height
+        int totalItems = 4; // 4 capes
+        int cardHeight = 180;
         int cardSpacing = 15;
         int cardsPerRow = 3;
         
         int rows = (int) Math.ceil(totalItems / (double) cardsPerRow);
         int totalHeight = rows * (cardHeight + cardSpacing);
-        int visibleHeight = 250; // Approximate visible area
+        int visibleHeight = 250;
         int maxScroll = Math.max(0, totalHeight - visibleHeight);
         
         scrollOffset -= verticalAmount * 20;

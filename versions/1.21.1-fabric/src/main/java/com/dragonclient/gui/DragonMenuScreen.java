@@ -16,7 +16,7 @@ public class DragonMenuScreen extends Screen {
     private static final int FIXED_GUI_SCALE = 2;
     
     private static final Identifier DRAGON_LOGO    = Identifier.of("dragonclient", "textures/gui/new-dragon.png");
-    private static final Identifier HEADER_TEXTURE = Identifier.of("dragonclient", "textures/gui/header.png");
+    private static final Identifier HEADER_TEXTURE = Identifier.of("dragonclient", "textures/gui/header.jpg");
     private static final Identifier CS_STAR_ICON   = Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final Identifier ULTRA_ICON     = Identifier.of("dragonclient", "textures/gui/ultra.png");
     
@@ -135,16 +135,16 @@ public class DragonMenuScreen extends Screen {
             boolean isHovered = mouseX >= buttonX && mouseX <= buttonX + buttonWidth
                              && mouseY >= by      && mouseY <= by + buttonHeight;
             
-            // Draw header texture as button background with 30% opacity and color hue
-            if (i == 0) {
-                // First button - no hue, 30% opacity
-                drawTextureWithColor(context, HEADER_TEXTURE, buttonX, by, buttonWidth, buttonHeight, 0x4DFFFFFF);
-            } else if (i == 1) {
-                // Second button - cyan hue with 30% opacity
-                drawTextureWithColor(context, HEADER_TEXTURE, buttonX, by, buttonWidth, buttonHeight, 0x4D00FFFF);
-            } else {
-                // Third button - purple hue with 30% opacity
-                drawTextureWithColor(context, HEADER_TEXTURE, buttonX, by, buttonWidth, buttonHeight, 0x4DFF00FF);
+            // Draw blue gradient background for all buttons
+            context.fillGradient(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0xFF0080FF, 0xFF0040CC);
+            
+            // Apply color hue overlay for CAPES and HUD
+            if (i == 1) {
+                // CAPES - Pink overlay (50% opacity)
+                context.fill(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0x80FF69B4);
+            } else if (i == 2) {
+                // HUD - Red overlay (50% opacity)
+                context.fill(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0x80FF0000);
             }
             
             drawRoundedBorder(context, buttonX, by, buttonWidth, buttonHeight, 0xFF1A1614);

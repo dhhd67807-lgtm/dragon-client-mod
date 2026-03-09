@@ -50,8 +50,7 @@ public class HudEditorScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Draw semi-transparent background
-        context.fill(0, 0, this.width, this.height, 0x80000000);
+        // Don't draw background - let HUD elements show clearly
         
         MinecraftClient client = MinecraftClient.getInstance();
         
@@ -108,17 +107,6 @@ public class HudEditorScreen extends Screen {
                 hudModule.render(context, delta);
                 
                 matrices.popMatrix();
-                
-                // Draw semi-transparent overlay for non-selected modules
-                boolean isSelected = (hudModule == selectedModule);
-                if (!isSelected) {
-                    int x = hudModule.getX();
-                    int y = hudModule.getY();
-                    int w = (int)(hudModule.getWidth() * moduleScale);
-                    int h = (int)(hudModule.getHeight() * moduleScale);
-                    // Draw 50% black overlay to simulate reduced opacity
-                    context.fill(x, y, x + w, y + h, 0x80000000);
-                }
             }
         }
         
@@ -140,7 +128,7 @@ public class HudEditorScreen extends Screen {
         int centerY = this.height / 2;
         int startY = centerY - totalHeight / 2; // Center vertically
         
-        // Draw dragon logo
+        // Draw dragon logo (1.21.6+: Uses RenderPipelines.GUI_TEXTURED)
         int logoX = centerX - logoSize / 2;
         context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED,
                           DRAGON_LOGO, logoX, startY, 0f, 0f, logoSize, logoSize, logoSize, logoSize, 0xFFFFFFFF);
@@ -155,7 +143,7 @@ public class HudEditorScreen extends Screen {
             context.drawText(this.textRenderer, info, 10, 55, 0xFF00FF00, true);
         }
         
-        super.render(context, mouseX, mouseY, delta);
+        // Don't call super.render() - it draws the blur background
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -181,12 +169,18 @@ public class HudEditorScreen extends Screen {
             if (debugLog != null) {
                 debugLog.println("  hudScale=" + hudScale);
                 debugLog.println("  transformedMouseX=" + transformedMouseX + " transformedMouseY=" + transformedMouseY);
+                debugLog.println("\n=== CLICKABILITY TEST FOR ALL HUD ELEMENTS ===");
             }
             
             System.out.println("HUD Editor Click: mouseX=" + transformedMouseX + " mouseY=" + transformedMouseY + " scale=" + hudScale);
             
             // Check if clicking on any HUD module
             int checkCount = 0;
+            int clickableCount = 0;
+            int nonClickableCount = 0;
+            StringBuilder clickableList = new StringBuilder();
+            StringBuilder nonClickableList = new StringBuilder();
+            
             for (Module module : DragonClientMod.getInstance().getModuleManager().getEnabledModules()) {
                 if (module instanceof HudModule) {
                     HudModule hudModule = (HudModule) module;
@@ -200,15 +194,36 @@ public class HudEditorScreen extends Screen {
                     boolean isInside = transformedMouseX >= x && transformedMouseX <= x + w && 
                                       transformedMouseY >= y && transformedMouseY <= y + h;
                     
+                    // Determine if element is clickable (has valid dimensions)
+                    boolean isClickable = w > 0 && h > 0;
+                    
+                    if (isClickable) {
+                        clickableCount++;
+                        clickableList.append("    ✓ ").append(hudModule.getName())
+                                    .append(" [x=").append(x).append(" y=").append(y)
+                                    .append(" w=").append(w).append(" h=").append(h)
+                                    .append(" scale=").append(hudModule.getScale()).append("]\n");
+                    } else {
+                        nonClickableCount++;
+                        nonClickableList.append("    ✗ ").append(hudModule.getName())
+                                       .append(" [x=").append(x).append(" y=").append(y)
+                                       .append(" w=").append(w).append(" h=").append(h)
+                                       .append(" scale=").append(hudModule.getScale())
+                                       .append("] - REASON: ");
+                        if (w <= 0) nonClickableList.append("width=0 ");
+                        if (h <= 0) nonClickableList.append("height=0");
+                        nonClickableList.append("\n");
+                    }
+                    
                     if (debugLog != null) {
                         debugLog.println("  Check " + checkCount + ": " + hudModule.getName() + 
                                        " x=" + x + " y=" + y + " w=" + w + " h=" + h + 
-                                       " inside=" + isInside);
+                                       " clickable=" + isClickable + " inside=" + isInside);
                     }
                     
                     System.out.println("  Checking " + hudModule.getName() + ": x=" + x + " y=" + y + " w=" + w + " h=" + h);
                     
-                    if (isInside) {
+                    if (isInside && isClickable) {
                         selectedModule = hudModule;
                         hudModule.setDragging(true);
                         dragOffsetX = transformedMouseX - x;
@@ -223,6 +238,20 @@ public class HudEditorScreen extends Screen {
                         return true;
                     }
                 }
+            }
+            
+            // Write summary to log
+            if (debugLog != null) {
+                debugLog.println("\n=== CLICKABILITY SUMMARY ===");
+                debugLog.println("Total HUD elements: " + checkCount);
+                debugLog.println("Clickable elements: " + clickableCount);
+                debugLog.println("Non-clickable elements: " + nonClickableCount);
+                debugLog.println("\nCLICKABLE ELEMENTS:");
+                debugLog.println(clickableList.toString());
+                debugLog.println("NON-CLICKABLE ELEMENTS:");
+                debugLog.println(nonClickableList.toString());
+                debugLog.println("=== END SUMMARY ===\n");
+                debugLog.flush();
             }
             
             selectedModule = null;

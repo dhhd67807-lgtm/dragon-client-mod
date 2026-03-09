@@ -16,10 +16,15 @@ public class MixinInGameHud {
     @Inject(method = "render", at = @At("RETURN"))
     private void onRender(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         try {
+            MinecraftClient client = MinecraftClient.getInstance();
+            
+            // Don't render HUD if HUD editor is open
+            if (client.currentScreen instanceof com.dragonclient.gui.HudEditorScreen) {
+                return;
+            }
+            
             DragonClientMod mod = DragonClientMod.getInstance();
             if (mod != null && mod.getHudRenderer() != null) {
-                MinecraftClient client = MinecraftClient.getInstance();
-                
                 System.out.println("MixinInGameHud.onRender called - GUI scale: " + client.getWindow().getScaleFactor());
                 
                 // Save current matrix state (1.21.1-1.21.10 use push/pop)

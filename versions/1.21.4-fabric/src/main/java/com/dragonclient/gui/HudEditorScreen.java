@@ -50,8 +50,7 @@ public class HudEditorScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Draw semi-transparent background
-        context.fill(0, 0, this.width, this.height, 0x80000000);
+        // Don't draw background - let HUD elements show clearly
         
         MinecraftClient client = MinecraftClient.getInstance();
         
@@ -108,17 +107,6 @@ public class HudEditorScreen extends Screen {
                 hudModule.render(context, delta);
                 
                 matrices.pop();
-                
-                // Draw semi-transparent overlay for non-selected modules
-                boolean isSelected = (hudModule == selectedModule);
-                if (!isSelected) {
-                    int x = hudModule.getX();
-                    int y = hudModule.getY();
-                    int w = (int)(hudModule.getWidth() * moduleScale);
-                    int h = (int)(hudModule.getHeight() * moduleScale);
-                    // Draw 50% black overlay to simulate reduced opacity
-                    context.fill(x, y, x + w, y + h, 0x80000000);
-                }
             }
         }
         
@@ -155,7 +143,7 @@ public class HudEditorScreen extends Screen {
             context.drawText(this.textRenderer, info, 10, 55, 0xFF00FF00, true);
         }
         
-        super.render(context, mouseX, mouseY, delta);
+        // Don't call super.render() - it draws the blur background
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {

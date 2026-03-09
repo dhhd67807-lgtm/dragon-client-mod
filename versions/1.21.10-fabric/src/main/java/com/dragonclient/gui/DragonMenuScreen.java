@@ -16,7 +16,7 @@ public class DragonMenuScreen extends Screen {
     private static final int FIXED_GUI_SCALE = 2;
     
     private static final Identifier DRAGON_LOGO    = Identifier.of("dragonclient", "textures/gui/new-dragon.png");
-    private static final Identifier HEADER_TEXTURE = Identifier.of("dragonclient", "textures/gui/header.png");
+    private static final Identifier HEADER_TEXTURE = Identifier.of("dragonclient", "textures/gui/header.jpg");
     private static final Identifier CS_STAR_ICON   = Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final Identifier ULTRA_ICON     = Identifier.of("dragonclient", "textures/gui/ultra.png");
     
@@ -69,15 +69,9 @@ public class DragonMenuScreen extends Screen {
             .dimensions(realButtonX, realStartY, realButtonWidth, realButtonHeight)
             .build());
         
-        // Cosmetics button temporarily disabled
-        // this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
-        //     MinecraftClient.getInstance().setScreen(new CosmeticsScreen()))
-        //     .dimensions(realButtonX, realStartY + realButtonSpacing, realButtonWidth, realButtonHeight)
-        //     .build());
-        
         this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
             MinecraftClient.getInstance().setScreen(new HudEditorScreen()))
-            .dimensions(realButtonX, realStartY + (2 * realButtonSpacing), realButtonWidth, realButtonHeight)
+            .dimensions(realButtonX, realStartY + realButtonSpacing, realButtonWidth, realButtonHeight)
             .build());
         
         // Hide vanilla rendering — we paint everything ourselves
@@ -104,7 +98,7 @@ public class DragonMenuScreen extends Screen {
         
         var matrices = context.getMatrices();
         matrices.pushMatrix();
-        matrices.scale(scaleFactor, scaleFactor); // 2D scaling only in 1.21.11
+        matrices.scale(scaleFactor, scaleFactor); // 2D scaling only in 1.21.6+
         
         renderMenu(context, transformedMouseX, transformedMouseY);
         
@@ -129,23 +123,20 @@ public class DragonMenuScreen extends Screen {
         int startY        = guiTop  + 120;
         int buttonSpacing = 45;
         
-        String[] labels    = {"MODS", "CAPES", "HUD"};
+        String[] labels    = {"MODS", "HUD"};
         
         for (int i = 0; i < labels.length; i++) {
             int     by        = startY + (i * buttonSpacing);
             boolean isHovered = mouseX >= buttonX && mouseX <= buttonX + buttonWidth
                              && mouseY >= by      && mouseY <= by + buttonHeight;
             
-            // Draw header texture as button background with 30% opacity and color hue
-            if (i == 0) {
-                // First button - no hue, 30% opacity
-                drawTextureWithColor(context, HEADER_TEXTURE, buttonX, by, buttonWidth, buttonHeight, 0x4DFFFFFF);
-            } else if (i == 1) {
-                // Second button - cyan hue with 30% opacity
-                drawTextureWithColor(context, HEADER_TEXTURE, buttonX, by, buttonWidth, buttonHeight, 0x4D00FFFF);
-            } else {
-                // Third button - purple hue with 30% opacity
-                drawTextureWithColor(context, HEADER_TEXTURE, buttonX, by, buttonWidth, buttonHeight, 0x4DFF00FF);
+            // Draw blue gradient background for all buttons
+            context.fillGradient(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0xFF0080FF, 0xFF0040CC);
+            
+            // Apply color hue overlay for HUD
+            if (i == 1) {
+                // HUD - Red overlay (50% opacity)
+                context.fill(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0x80FF0000);
             }
             
             drawRoundedBorder(context, buttonX, by, buttonWidth, buttonHeight, 0xFF1A1614);
@@ -162,9 +153,6 @@ public class DragonMenuScreen extends Screen {
             if (i == 0) {
                 // MODS - cs_star icon (no hue)
                 drawTexture(context, CS_STAR_ICON, cx, starY, iconSize, iconSize);
-            } else if (i == 1) {
-                // CAPES - cs_star icon with green hue
-                drawTextureWithColor(context, CS_STAR_ICON, cx, starY, iconSize, iconSize, 0xFF00FF00);
             } else {
                 // HUD - ultra icon (no hue)
                 drawTexture(context, ULTRA_ICON, cx, starY, iconSize, iconSize);
@@ -195,16 +183,16 @@ public class DragonMenuScreen extends Screen {
     }
 
     // -------------------------------------------------------------------------
-    // Texture helper — 1.21.11: Use RenderPipelines.GUI_TEXTURED
+    // Texture helper — 1.21.6+: Uses RenderPipelines.GUI_TEXTURED
     // -------------------------------------------------------------------------
     private void drawTexture(DrawContext context, Identifier texture,
                             int x, int y, int width, int height) {
-        // 1.21.11: Use RenderPipelines.GUI_TEXTURED for GUI texture rendering
+        // 1.21.6+: Use RenderPipelines.GUI_TEXTURED
         context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, 
-                          texture, x, y, 0f, 0f, width, height, width, height);
+                          texture, x, y, 0f, 0f, width, height, width, height, 0xFFFFFFFF);
     }
     
-    // Texture helper with color/opacity for 1.21.11
+    // Texture helper with color/opacity for 1.21.6+
     private void drawTextureWithColor(DrawContext context, Identifier texture, int x, int y, int width, int height, int color) {
         context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, 
                           texture, x, y, 0f, 0f, width, height, width, height, color);
@@ -230,16 +218,13 @@ public class DragonMenuScreen extends Screen {
         int startY        = guiTop + 120;
         int buttonSpacing = 45;
         
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             int by = startY + (i * buttonSpacing);
             if (transformedMouseX >= buttonX && transformedMouseX <= buttonX + buttonWidth &&
                 transformedMouseY >= by && transformedMouseY <= by + buttonHeight) {
                 if (i == 0) {
                     MinecraftClient.getInstance().setScreen(new DragonClientScreen());
                 } else if (i == 1) {
-                    // CosmeticsScreen temporarily disabled
-                    // MinecraftClient.getInstance().setScreen(new CosmeticsScreen());
-                } else if (i == 2) {
                     MinecraftClient.getInstance().setScreen(new HudEditorScreen());
                 }
                 return true;
