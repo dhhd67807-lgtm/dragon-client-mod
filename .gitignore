@@ -28,3 +28,6 @@ crash-reports/
 *.bak
 *.swp
 *~
+
+# Version-specific mod downloads (not build artifacts)
+/1.21.*/
