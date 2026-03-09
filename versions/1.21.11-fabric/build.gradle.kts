@@ -27,6 +27,23 @@ dependencies {
     implementation("io.github.llamalad7:mixinextras-fabric:0.4.1")
     annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.4.1")
     include("io.github.llamalad7:mixinextras-fabric:0.4.1")
+    
+    // Bundle performance mods (jar-in-jar) - exclude Sodium for 1.21.11
+    val libsDir = file("libs")
+    if (libsDir.exists()) {
+        fileTree(libsDir) {
+            include("*.jar")
+        }.forEach { jarFile ->
+            // Exclude Sodium for 1.21.11 (causes LWJGL crashes)
+            if (jarFile.name.contains("sodium", ignoreCase = true)) {
+                println("[Dragon] Skipping Sodium for 1.21.11: ${jarFile.name}")
+            } else {
+                println("[Dragon] Including bundled mod: ${jarFile.name}")
+                modImplementation(files(jarFile))
+                include(files(jarFile))
+            }
+        }
+    }
 }
 
 tasks.processResources {
