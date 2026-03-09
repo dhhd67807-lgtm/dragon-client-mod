@@ -8,7 +8,7 @@
     "MixinInGameHud",
     "MixinPlayerEntity",
     "MixinClientPlayerEntity",
-    "MixinMouseHandler",
+    "MixinMouse",
     "MixinChatScreen",
     "MixinGameOptions"
   ],
