@@ -65,7 +65,10 @@ jobs:
       - name: Rename JAR
         run: |
           cd versions/${{ matrix.minecraft }}-fabric/build/libs
-          mv dragon-client-${{ matrix.minecraft }}-*.jar dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar
+          # Only rename if the file doesn't already have the correct name
+          if [ ! -f "dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar" ]; then
+            mv dragon-client-${{ matrix.minecraft }}-*.jar dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar
+          fi
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
