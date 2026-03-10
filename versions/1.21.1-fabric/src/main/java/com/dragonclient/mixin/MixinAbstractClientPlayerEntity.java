@@ -2,6 +2,7 @@ package com.dragonclient.mixin;
 
 import com.dragonclient.cosmetics.CapeManager;
 import com.dragonclient.cosmetics.SkinManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.util.SkinTextures;
@@ -24,6 +25,7 @@ public abstract class MixinAbstractClientPlayerEntity {
     @Overwrite
     public SkinTextures getSkinTextures() {
         AbstractClientPlayerEntity player = (AbstractClientPlayerEntity)(Object)this;
+        boolean isLocalPlayer = MinecraftClient.getInstance() != null && player == MinecraftClient.getInstance().player;
         String playerName = player.getName().getString();
         
         // Get vanilla skin textures as fallback
@@ -43,7 +45,7 @@ public abstract class MixinAbstractClientPlayerEntity {
         // Check for custom cape
         CapeManager capeManager = CapeManager.getInstance();
         Identifier capeTexture = vanilla.capeTexture();
-        if (capeManager.hasCapeEquipped()) {
+        if (isLocalPlayer && capeManager.hasCapeEquipped()) {
             Identifier customCape = capeManager.getCapeTexture();
             if (customCape != null) {
                 capeTexture = customCape;

@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "dragonclient:gui/new-dragon-tag-16.png",
+      "ascent": 12,
+      "height": 16,
+      "chars": [
+        "\ue000"
+      ]
+    }
+  ]
+}

@@ -263,6 +263,11 @@ public class HudEditorScreen extends Screen {
         return false;
     }
 
+    @Override
+    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean dblClick) {
+        return mouseClicked(click.x(), click.y(), click.button());
+    }
+
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (debugLog != null) {
             debugLog.println("\nMOUSE_RELEASED: button=" + button + " mouseX=" + mouseX + " mouseY=" + mouseY);
@@ -276,6 +281,11 @@ public class HudEditorScreen extends Screen {
             selectedModule.setDragging(false);
         }
         return false;
+    }
+
+    @Override
+    public boolean mouseReleased(net.minecraft.client.gui.Click click) {
+        return mouseReleased(click.x(), click.y(), click.button());
     }
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
@@ -321,6 +331,11 @@ public class HudEditorScreen extends Screen {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean mouseDragged(net.minecraft.client.gui.Click click, double deltaX, double deltaY) {
+        return mouseDragged(click.x(), click.y(), click.button(), deltaX, deltaY);
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {

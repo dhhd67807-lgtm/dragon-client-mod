@@ -10,7 +10,9 @@
     "MixinClientPlayerEntity",
     "MixinMouse",
     "MixinChatScreen",
-    "MixinGameOptions"
+    "MixinGameOptions",
+    "MixinEntityRendererNameTag",
+    "MixinPlayerEntityRendererNameTag"
   ],
   "injectors": {
     "defaultRequire": 1

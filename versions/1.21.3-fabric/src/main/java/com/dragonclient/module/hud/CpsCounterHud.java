@@ -8,6 +8,7 @@ import java.util.Queue;
 
 public class CpsCounterHud extends HudModule {
     private final Queue<Long> clicks = new LinkedList<>();
+    private boolean wasAttackPressed = false;
     private static final long CPS_WINDOW = 1000; // 1 second
 
     public CpsCounterHud() {
@@ -26,11 +27,20 @@ public class CpsCounterHud extends HudModule {
         return clicks.size();
     }
 
+    private void trackClicks(MinecraftClient client) {
+        boolean isAttackPressed = client.options.attackKey.isPressed();
+        if (isAttackPressed && !wasAttackPressed) {
+            registerClick();
+        }
+        wasAttackPressed = isAttackPressed;
+    }
+
     @Override
     public void render(DrawContext context, float tickDelta) {
         if (!isEnabled()) return;
         
         MinecraftClient client = MinecraftClient.getInstance();
+        trackClicks(client);
         String cps = getCPS() + " CPS";
         
         // Draw background - #1D1C1C at 50% opacity

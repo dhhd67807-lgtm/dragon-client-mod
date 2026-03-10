@@ -17,10 +17,13 @@ public class ReachDisplayHud extends HudModule {
         
         MinecraftClient client = MinecraftClient.getInstance();
         
-        // Default reach is 3.0 blocks in survival, 4.5 in creative
-        double reach = client.interactionManager != null && client.interactionManager.getCurrentGameMode().isCreative() ? 4.5 : 3.0;
-        
-        String text = String.format("Reach: %.1f", reach);
+        double reach = 0.0;
+        if (client.player != null && client.crosshairTarget != null &&
+            client.crosshairTarget.getType() != net.minecraft.util.hit.HitResult.Type.MISS) {
+            reach = client.player.getEyePos().distanceTo(client.crosshairTarget.getPos());
+        }
+
+        String text = String.format("Reach: %.2f", reach);
         
         // Calculate position from right edge
         int windowWidth = client.getWindow().getScaledWidth();

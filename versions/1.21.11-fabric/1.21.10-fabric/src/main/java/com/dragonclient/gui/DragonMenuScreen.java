@@ -51,16 +51,10 @@ public class DragonMenuScreen extends Screen {
         this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
             MinecraftClient.getInstance().setScreen(new DragonClientScreen()))
             .dimensions(buttonX, startY, buttonWidth, buttonHeight)
-            .build());
-        
-        this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
-            MinecraftClient.getInstance().setScreen(new CosmeticsScreen()))
-            .dimensions(buttonX, startY + buttonSpacing, buttonWidth, buttonHeight)
-            .build());
-        
+            .build());        
         this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> { 
             /* TODO: HUD editor */ 
-        }).dimensions(buttonX, startY + (2 * buttonSpacing), buttonWidth, buttonHeight)
+        }).dimensions(buttonX, startY + buttonSpacing, buttonWidth, buttonHeight)
             .build());
         
         // Hide vanilla rendering — we paint everything ourselves
@@ -113,7 +107,7 @@ public class DragonMenuScreen extends Screen {
         int startY        = guiTop  + 120;
         int buttonSpacing = 45;
         
-        String[] labels    = {"MODS", "CAPES", "HUD"};
+        String[] labels    = {"MODS", "HUD"};
         
         for (int i = 0; i < labels.length; i++) {
             int     by        = startY + (i * buttonSpacing);
@@ -187,14 +181,14 @@ public class DragonMenuScreen extends Screen {
         int startY        = guiTop + 120;
         int buttonSpacing = 45;
         
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             int by = startY + (i * buttonSpacing);
             if (transformedMouseX >= buttonX && transformedMouseX <= buttonX + buttonWidth &&
                 transformedMouseY >= by && transformedMouseY <= by + buttonHeight) {
                 if (i == 0) {
                     MinecraftClient.getInstance().setScreen(new DragonClientScreen());
                 } else if (i == 1) {
-                    MinecraftClient.getInstance().setScreen(new CosmeticsScreen());
+                    MinecraftClient.getInstance().setScreen(new HudEditorScreen());
                 }
                 return true;
             }

@@ -1,6 +1,7 @@
 package com.dragonclient;
 
 import com.dragonclient.gui.hud.HudRenderer;
+import com.dragonclient.util.CosmeticsDebugLogger;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -18,6 +19,8 @@ public class DragonClientClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         DragonClientMod.LOGGER.info("Initializing Dragon Client (Client-side)");
+        CosmeticsDebugLogger.log("DragonClientClient init");
+        CosmeticsDebugLogger.log("Cosmetics debug file: " + CosmeticsDebugLogger.getLogFilePath());
         
         // Initialize texture debug logger
         // com.dragonclient.util.TextureDebugLogger.log("=== Dragon Client 1.21.1 Starting ===");

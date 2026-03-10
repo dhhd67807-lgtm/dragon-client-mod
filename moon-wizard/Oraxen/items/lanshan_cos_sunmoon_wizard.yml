@@ -1,0 +1,42 @@
+sun_wizard_hat:
+  itemname: Sun Wizard Hat
+  material: LEATHER_HORSE_ARMOR
+  Pack:
+    generate_model: false
+    model: lanshan/cosmetics/sunmoon_wizard/1
+    custom_model_data: 23001
+sun_wizard_staff:
+  itemname: Sun Wizard Staff
+  material: LEATHER_HORSE_ARMOR
+  Pack:
+    generate_model: false
+    model: lanshan/cosmetics/sunmoon_wizard/2
+    custom_model_data: 23002
+sun_wizard_cloak:
+  itemname: Sun Wizard Cloak
+  material: LEATHER_HORSE_ARMOR
+  Pack:
+    generate_model: false
+    model: lanshan/cosmetics/sunmoon_wizard/3
+    custom_model_data: 23003
+moon_wizard_hat:
+  itemname: Moon Wizard Hat
+  material: LEATHER_HORSE_ARMOR
+  Pack:
+    generate_model: false
+    model: lanshan/cosmetics/sunmoon_wizard/4
+    custom_model_data: 23004
+moon_wizard_staff:
+  itemname: Moon Wizard Staff
+  material: LEATHER_HORSE_ARMOR
+  Pack:
+    generate_model: false
+    model: lanshan/cosmetics/sunmoon_wizard/5
+    custom_model_data: 23005
+moon_wizard_cloak:
+  itemname: Moon Wizard Cloak
+  material: LEATHER_HORSE_ARMOR
+  Pack:
+    generate_model: false
+    model: lanshan/cosmetics/sunmoon_wizard/6
+    custom_model_data: 23006

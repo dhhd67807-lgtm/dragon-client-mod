@@ -1,6 +1,7 @@
 package com.dragonclient.mixin;
 
 import com.dragonclient.cosmetics.CapeManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.util.Identifier;
@@ -14,6 +15,10 @@ public class MixinAbstractClientPlayerEntity {
     
     @Inject(method = "getSkinTextures", at = @At("RETURN"), cancellable = true, require = 0)
     private void onGetSkinTextures(CallbackInfoReturnable<SkinTextures> cir) {
+        AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
+        if (MinecraftClient.getInstance() == null || player != MinecraftClient.getInstance().player) {
+            return;
+        }
         CapeManager capeManager = CapeManager.getInstance();
         if (capeManager.hasCapeEquipped()) {
             Identifier customCape = capeManager.getCapeTexture();

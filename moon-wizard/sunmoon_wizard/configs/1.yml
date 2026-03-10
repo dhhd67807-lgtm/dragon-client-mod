@@ -1,0 +1,61 @@
+categories:
+  sunmoon_wizard:
+    enabled: true
+    skip_if_already: false
+    icon: "sunmoon_wizard:sun_wizard_hat"
+    name: Adventurer
+    items:
+      - 'sunmoon_wizard:sun_wizard_hat'
+      - 'sunmoon_wizard:sun_wizard_staff'
+      - 'sunmoon_wizard:sun_wizard_cloak'
+      - 'sunmoon_wizard:moon_wizard_hat'
+      - 'sunmoon_wizard:moon_wizard_staff'
+      - 'sunmoon_wizard:moon_wizard_cloak'
+
+info:
+  namespace: sunmoon_wizard
+items:
+  sun_wizard_hat:
+    display_name: Sun Wizard Hat
+    resource:
+      material: LEATHER_HORSE_ARMOR
+      model_id: 23001
+      generate: false
+      model_path: item/1
+  sun_wizard_staff:
+    display_name: Sun Wizard Staff
+    resource:
+      material: LEATHER_HORSE_ARMOR
+      model_id: 23002
+      generate: false
+      model_path: item/2
+  sun_wizard_cloak:
+    display_name: Sun Wizard Cloak
+    resource:
+      material: LEATHER_HORSE_ARMOR
+      model_id: 23003
+      generate: false
+      model_path: item/3
+  moon_wizard_hat:
+    display_name: Moon Wizard Hat
+    resource:
+      material: LEATHER_HORSE_ARMOR
+      model_id: 23004
+      generate: false
+      model_path: item/4
+  moon_wizard_staff:
+    display_name: Moon Wizard Staff
+    resource:
+      material: LEATHER_HORSE_ARMOR
+      model_id: 23005
+      generate: false
+      model_path: item/5
+  moon_wizard_cloak:
+    display_name: Moon Wizard Cloak
+    resource:
+      material: LEATHER_HORSE_ARMOR
+      model_id: 23006
+      generate: false
+      model_path: item/6
+
+# 89314TPAKNQCNE2NCNP

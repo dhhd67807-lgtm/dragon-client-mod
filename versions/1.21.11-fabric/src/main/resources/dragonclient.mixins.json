@@ -11,7 +11,9 @@
     "MixinMouse",
     "MixinChatScreen",
     "MixinGameOptions",
-    "MixinPlayerEntityRenderer"
+    "MixinPlayerEntityRenderer",
+    "MixinEntityRendererNameTag",
+    "MixinPlayerEntityRendererNameTag"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,0 +1,9 @@
+{
+  "sources": [
+    {
+      "type": "single",
+      "resource": "dragonclient:gui/new-dragon-tag-16",
+      "sprite": "dragonclient:nametag/new_dragon"
+    }
+  ]
+}

@@ -56,27 +56,21 @@ public class DragonMenuScreen extends Screen {
         float scaleFactor = (float)(targetScale / currentScale);
         
         // Convert button positions from scaled space to real screen space
-        int realButtonX = (int)(buttonX * scaleFactor);
-        int realStartY = (int)(startY * scaleFactor);
-        int realButtonWidth = (int)(buttonWidth * scaleFactor);
-        int realButtonHeight = (int)(buttonHeight * scaleFactor);
-        int realButtonSpacing = (int)(buttonSpacing * scaleFactor);
+        int realButtonX = Math.round(buttonX * scaleFactor);
+        int realFirstButtonY = Math.round(startY * scaleFactor);
+        int realButtonWidth = Math.round(buttonWidth * scaleFactor);
+        int realButtonHeight = Math.round(buttonHeight * scaleFactor);
+        int realSecondButtonY = Math.round((startY + buttonSpacing) * scaleFactor);
         
         // Invisible (zero-alpha) ButtonWidgets — they own all click/focus logic.
         // We draw our own styled backgrounds in render(); no vanilla button chrome needed.
         this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
             MinecraftClient.getInstance().setScreen(new DragonClientScreen()))
-            .dimensions(realButtonX, realStartY, realButtonWidth, realButtonHeight)
-            .build());
-        
-        this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
-            MinecraftClient.getInstance().setScreen(new CosmeticsScreen()))
-            .dimensions(realButtonX, realStartY + realButtonSpacing, realButtonWidth, realButtonHeight)
-            .build());
-        
+            .dimensions(realButtonX, realFirstButtonY, realButtonWidth, realButtonHeight)
+            .build());        
         this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
             MinecraftClient.getInstance().setScreen(new HudEditorScreen()))
-            .dimensions(realButtonX, realStartY + (2 * realButtonSpacing), realButtonWidth, realButtonHeight)
+            .dimensions(realButtonX, realSecondButtonY, realButtonWidth, realButtonHeight)
             .build());
         
         // Hide vanilla rendering — we paint everything ourselves
@@ -128,7 +122,7 @@ public class DragonMenuScreen extends Screen {
         int startY        = guiTop  + 120;
         int buttonSpacing = 45;
         
-        String[] labels    = {"MODS", "CAPES", "HUD"};
+        String[] labels    = {"MODS", "HUD"};
         
         for (int i = 0; i < labels.length; i++) {
             int     by        = startY + (i * buttonSpacing);
@@ -138,11 +132,8 @@ public class DragonMenuScreen extends Screen {
             // Draw blue gradient background for all buttons
             context.fillGradient(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0xFF0080FF, 0xFF0040CC);
             
-            // Apply color hue overlay for CAPES and HUD
+            // Apply color overlay for HUD
             if (i == 1) {
-                // CAPES - Pink overlay (50% opacity)
-                context.fill(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0x80FF69B4);
-            } else if (i == 2) {
                 // HUD - Red overlay (50% opacity)
                 context.fill(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0x80FF0000);
             }
@@ -161,9 +152,6 @@ public class DragonMenuScreen extends Screen {
             if (i == 0) {
                 // MODS - cs_star icon (no hue)
                 drawTexture(context, CS_STAR_ICON, cx, starY, iconSize, iconSize);
-            } else if (i == 1) {
-                // CAPES - cs_star icon with green hue
-                drawTextureWithColor(context, CS_STAR_ICON, cx, starY, iconSize, iconSize, 0xFF00FF00);
             } else {
                 // HUD - ultra icon (no hue)
                 drawTexture(context, ULTRA_ICON, cx, starY, iconSize, iconSize);
@@ -230,15 +218,13 @@ public class DragonMenuScreen extends Screen {
         int startY        = guiTop + 120;
         int buttonSpacing = 45;
         
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             int by = startY + (i * buttonSpacing);
             if (transformedMouseX >= buttonX && transformedMouseX <= buttonX + buttonWidth &&
                 transformedMouseY >= by && transformedMouseY <= by + buttonHeight) {
                 if (i == 0) {
                     MinecraftClient.getInstance().setScreen(new DragonClientScreen());
                 } else if (i == 1) {
-                    MinecraftClient.getInstance().setScreen(new CosmeticsScreen());
-                } else if (i == 2) {
                     MinecraftClient.getInstance().setScreen(new HudEditorScreen());
                 }
                 return true;
