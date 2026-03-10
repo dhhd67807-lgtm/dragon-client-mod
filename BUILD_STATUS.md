@@ -88,6 +88,7 @@
 - **JAR Size**: 22MB
 - **Location**: `~/Library/Application Support/lapetus/instances/dragon-1.21.11/mods/`
 - **API Changes Handled**:
+  - **Fabric Loom**: Updated from 1.11.7 to 1.12.7 (fixed class casting issue)
   - **RenderTickCounter**: `getTickDelta(false)` → `getDynamicDeltaTicks()`
   - **Armor Access**: `getArmorItems()` → `getEquippedStack(EquipmentSlot.HEAD/CHEST/LEGS/FEET)`
   - **Matrix3x2fStack**: `push()`/`pop()` → `pushMatrix()`/`popMatrix()`, `scale(x, y, z)` → `scale(x, y)` (2D only)
@@ -102,7 +103,7 @@
 - **Known Limitations**:
   - Entity rendering disabled (3D player models in cosmetics screen)
   - Texture color tinting removed (shader color API unavailable)
-- **Solution**: Reflection-based texture rendering with RenderPipeline, manual border drawing, disabled entity rendering
+- **Solution**: Updated Fabric Loom version, reflection-based texture rendering with RenderPipeline, manual border drawing, disabled entity rendering
 
 ---
 
@@ -239,18 +240,19 @@ Each version folder contains FULL source code with version-specific API adaptati
 ## Success Metrics
 
 ✅ **Achieved**:
-- 8 Minecraft versions building successfully (1.21.1, 1.21.3, 1.21.4, 1.21.6, 1.21.7, 1.21.8, 1.21.9, 1.21.10)
+- 9 Minecraft versions building successfully (1.21.1, 1.21.3, 1.21.4, 1.21.6, 1.21.7, 1.21.8, 1.21.10, 1.21.11)
 - Multi-version build system working
 - Version-specific API compatibility implemented
 - Clean separation of version-specific code
 - Automated build script
 - Comprehensive documentation
 - Solved input wrapper challenge using Essential's MixinMouse approach
+- Fixed Fabric Loom compatibility issues
 
 🎯 **Target**:
-- 8 Minecraft versions (1.21.1 through 1.21.10)
+- 9 Minecraft versions (1.21.1 through 1.21.11)
 - Single command to build all versions
 - Full feature parity across all versions
 - Easy to add new versions
 
-📊 **Current Progress**: 100% (9/9 versions working - 1.21.1 through 1.21.10 complete!)
+📊 **Current Progress**: 100% (9/9 versions working - 1.21.1 through 1.21.11 complete!)

@@ -6,10 +6,7 @@ import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.text.Style;
-import net.minecraft.text.StyleSpriteSource;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,11 +16,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerEntityRenderer.class)
 public class MixinPlayerEntityRendererNameTag {
-    private static final StyleSpriteSource DRAGONCLIENT_ICON_FONT = new StyleSpriteSource.Font(
-        Identifier.of("dragonclient", "cs_star")
-    );
-    private static final Text DRAGONCLIENT_STAR_PREFIX = Text.literal("\ue000")
-        .setStyle(Style.EMPTY.withFont(DRAGONCLIENT_ICON_FONT));
 
     private boolean dragonclient$shouldForceNameTag(Entity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -57,10 +49,8 @@ public class MixinPlayerEntityRendererNameTag {
 
         if (state instanceof PlayerEntityRenderState playerState) {
             Text displayName = entity.getDisplayName();
-            playerState.playerName = Text.empty()
-                .append(DRAGONCLIENT_STAR_PREFIX.copy())
-                .append(Text.literal(" "))
-                .append(displayName.copy().fillStyle(displayName.getStyle().withFont(StyleSpriteSource.DEFAULT)));
+            // Simplified version without custom font for 1.21.11 compatibility
+            playerState.playerName = Text.literal("★ ").append(displayName);
         }
     }
 }
