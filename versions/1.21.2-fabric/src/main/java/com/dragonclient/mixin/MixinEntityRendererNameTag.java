@@ -1,7 +1,6 @@
 package com.dragonclient.mixin;
 
-import com.dragonclient.DragonClientMod;
-import com.dragonclient.module.Module;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -14,7 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MixinEntityRendererNameTag {
 
     private boolean dragonclient$shouldForceNameTag(Entity entity) {
-        return entity instanceof PlayerEntity;
+        MinecraftClient client = MinecraftClient.getInstance();
+        return entity instanceof PlayerEntity && client != null && entity == client.player;
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)

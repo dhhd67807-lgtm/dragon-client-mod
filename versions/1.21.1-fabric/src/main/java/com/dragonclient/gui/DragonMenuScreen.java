@@ -12,11 +12,11 @@ import org.slf4j.LoggerFactory;
 public class DragonMenuScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger("DragonClient");
     private static final int MENU_WIDTH = 200;
-    private static final int MENU_HEIGHT = 320;
+    private static final int MENU_HEIGHT = 240;
     private static final int FIXED_GUI_SCALE = 2;
     
     private static final Identifier DRAGON_LOGO    = Identifier.of("dragonclient", "textures/gui/new-dragon.png");
-    private static final Identifier HEADER_TEXTURE = Identifier.of("dragonclient", "textures/gui/header.jpg");
+    private static final Identifier HEADER_TEXTURE = Identifier.of("dragonclient", "textures/gui/header-menu.png");
     private static final Identifier CS_STAR_ICON   = Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final Identifier ULTRA_ICON     = Identifier.of("dragonclient", "textures/gui/ultra.png");
     
@@ -48,7 +48,7 @@ public class DragonMenuScreen extends Screen {
         int buttonHeight  = 35;
         int buttonX       = guiLeft + (MENU_WIDTH - buttonWidth) / 2;
         int startY        = guiTop + 120;
-        int buttonSpacing = 45;
+        int buttonSpacing = 40;
         
         // Calculate scale factor to convert scaled coordinates to real screen coordinates
         double currentScale = client.getWindow().getScaleFactor();
@@ -107,6 +107,8 @@ public class DragonMenuScreen extends Screen {
     private void renderMenu(DrawContext context, int mouseX, int mouseY) {
         // Main panel
         drawRoundedRect  (context, guiLeft, guiTop, MENU_WIDTH, MENU_HEIGHT, 0xFF100C08);
+        drawTexture(context, HEADER_TEXTURE, guiLeft + 2, guiTop + 2, MENU_WIDTH - 4, MENU_HEIGHT - 4);
+        context.fill(guiLeft + 2, guiTop + 2, guiLeft + MENU_WIDTH - 2, guiTop + MENU_HEIGHT - 2, 0xA8100C08);
         drawRoundedBorder(context, guiLeft, guiTop, MENU_WIDTH, MENU_HEIGHT, 0xFF2A2622);
         
         // Dragon logo
@@ -120,7 +122,7 @@ public class DragonMenuScreen extends Screen {
         int buttonHeight  = 35;
         int buttonX       = guiLeft + (MENU_WIDTH - buttonWidth) / 2;
         int startY        = guiTop  + 120;
-        int buttonSpacing = 45;
+        int buttonSpacing = 40;
         
         String[] labels    = {"MODS", "HUD"};
         
@@ -128,17 +130,11 @@ public class DragonMenuScreen extends Screen {
             int     by        = startY + (i * buttonSpacing);
             boolean isHovered = mouseX >= buttonX && mouseX <= buttonX + buttonWidth
                              && mouseY >= by      && mouseY <= by + buttonHeight;
-            
-            // Draw blue gradient background for all buttons
-            context.fillGradient(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0xFF0080FF, 0xFF0040CC);
-            
-            // Apply color overlay for HUD
-            if (i == 1) {
-                // HUD - Red overlay (50% opacity)
-                context.fill(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0x80FF0000);
-            }
-            
-            drawRoundedBorder(context, buttonX, by, buttonWidth, buttonHeight, 0xFF1A1614);
+            // Draw semi-transparent white button background
+            context.fill(buttonX, by, buttonX + buttonWidth, by + buttonHeight, 0x80FFFFFF);
+
+            // Use a solid white outline so the cards stay crisp over the background image
+            drawRoundedBorder(context, buttonX, by, buttonWidth, buttonHeight, 0xFFFFFFFF);
             
             // Star icon for all buttons
             int iconSize = 12;
@@ -214,7 +210,7 @@ public class DragonMenuScreen extends Screen {
         int buttonHeight  = 35;
         int buttonX       = guiLeft + (MENU_WIDTH - buttonWidth) / 2;
         int startY        = guiTop + 120;
-        int buttonSpacing = 45;
+        int buttonSpacing = 40;
         
         for (int i = 0; i < 2; i++) {
             int by = startY + (i * buttonSpacing);
