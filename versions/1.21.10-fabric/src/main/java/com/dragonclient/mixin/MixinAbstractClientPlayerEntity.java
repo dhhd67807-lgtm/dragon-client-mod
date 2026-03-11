@@ -45,13 +45,13 @@ public abstract class MixinAbstractClientPlayerEntity {
         }
 
         AssetInfo.TextureAsset body = customSkin != null
-            ? new AssetInfo.TextureAssetInfo(customSkin)
+            ? new AssetInfo.TextureAssetInfo(customSkin, customSkin)
             : vanilla.body();
         AssetInfo.TextureAsset cape = customCape != null
-            ? new AssetInfo.TextureAssetInfo(customCape)
+            ? new AssetInfo.TextureAssetInfo(customCape, customCape)
             : vanilla.cape();
         AssetInfo.TextureAsset elytra = customCape != null
-            ? new AssetInfo.TextureAssetInfo(customCape)
+            ? new AssetInfo.TextureAssetInfo(customCape, customCape)
             : vanilla.elytra();
 
         PlayerSkinType model = vanilla.model();

@@ -1,15 +1,13 @@
 package com.dragonclient.mixin;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
-import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -17,7 +15,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerEntityRenderer.class)
 public class MixinPlayerEntityRendererNameTag {
@@ -27,9 +24,9 @@ public class MixinPlayerEntityRendererNameTag {
     private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 7.0f;
     private static final float DRAGONCLIENT_NAME_TAG_ICON_GAP = 2.0f;
 
-    private boolean dragonclient$shouldForceNameTag(Entity entity) {
+    private boolean dragonclient$shouldForceNameTag(AbstractClientPlayerEntity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
-        return entity instanceof PlayerEntity && client != null && entity == client.player;
+        return client != null && entity == client.player;
     }
 
     private boolean dragonclient$shouldRenderOwnNameTag(PlayerEntityRenderState state) {
@@ -37,71 +34,29 @@ public class MixinPlayerEntityRendererNameTag {
         return client != null && client.player != null && state.id == client.player.getId();
     }
 
-    @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelOld(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(entity)) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelNew(Entity entity, double distance, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(entity)) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "hasLabel(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelPlayerState(PlayerEntityRenderState state, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldRenderOwnNameTag(state)) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "hasLabel(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelPlayerStateDistance(PlayerEntityRenderState state, double distance, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldRenderOwnNameTag(state)) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "hasLabel(Lnet/minecraft/client/render/entity/state/EntityRenderState;)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelEntityState(EntityRenderState state, CallbackInfoReturnable<Boolean> cir) {
-        if (state instanceof PlayerEntityRenderState playerState && dragonclient$shouldRenderOwnNameTag(playerState)) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "hasLabel(Lnet/minecraft/client/render/entity/state/EntityRenderState;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelEntityStateDistance(EntityRenderState state, double distance, CallbackInfoReturnable<Boolean> cir) {
-        if (state instanceof PlayerEntityRenderState playerState && dragonclient$shouldRenderOwnNameTag(playerState)) {
-            cir.setReturnValue(true);
-        }
-    }
-
     @Inject(
-        method = "updateRenderState(Lnet/minecraft/entity/Entity;Lnet/minecraft/client/render/entity/state/EntityRenderState;F)V",
+        method = "updateRenderState(Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;F)V",
         at = @At("TAIL"),
         require = 0
     )
-    private void dragonclient$forcePlayerLabelState(Entity entity, EntityRenderState state, float tickDelta, CallbackInfo ci) {
-        if (!(state instanceof PlayerEntityRenderState playerState) || !dragonclient$shouldForceNameTag(entity)) {
+    private void dragonclient$forcePlayerLabelState(
+        AbstractClientPlayerEntity entity,
+        PlayerEntityRenderState state,
+        float tickDelta,
+        CallbackInfo ci
+    ) {
+        if (!dragonclient$shouldForceNameTag(entity)) {
             return;
         }
 
         state.displayName = null;
         state.nameLabelPos = new Vec3d(0.0, entity.getHeight() + 0.2, 0.0);
-        playerState.playerName = entity.getDisplayName().copy();
+        state.playerName = entity.getDisplayName().copy();
     }
 
     @Inject(
         method = "renderLabelIfPresent(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;renderLabelIfPresent(Lnet/minecraft/client/render/entity/state/EntityRenderState;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
-            ordinal = 0,
-            shift = At.Shift.AFTER
-        ),
+        at = @At("TAIL"),
         require = 0
     )
     private void dragonclient$renderNameTagIcon(
