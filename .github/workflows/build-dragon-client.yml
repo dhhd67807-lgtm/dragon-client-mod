@@ -6,6 +6,10 @@ on:
     paths:
       - 'versions/**'
       - '.github/workflows/**'
+      - 'gradle.properties'
+      - 'root.gradle.kts'
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
