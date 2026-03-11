@@ -21,17 +21,10 @@ jobs:
       - name: Get version
         id: version
         run: |
-          # Get latest tag or start at 1.0.0
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
-          VERSION=${LATEST_TAG#v}
-          
-          # Increment patch version
-          IFS='.' read -r major minor patch <<< "$VERSION"
-          NEW_PATCH=$((patch + 1))
-          NEW_VERSION="${major}.${minor}.${NEW_PATCH}"
-          
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "New version: $NEW_VERSION"
+          # Use the version from root.gradle.kts
+          VERSION=$(grep 'version = ' root.gradle.kts | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
 
   build:
     needs: version
