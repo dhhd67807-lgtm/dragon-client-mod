@@ -11,6 +11,7 @@
     "MixinMouse",
     "MixinChatScreen",
     "MixinGameOptions",
+    "MixinAbstractClientPlayerEntity",
     "MixinEntityRendererNameTag",
     "MixinPlayerEntityRendererNameTag"
   ],
