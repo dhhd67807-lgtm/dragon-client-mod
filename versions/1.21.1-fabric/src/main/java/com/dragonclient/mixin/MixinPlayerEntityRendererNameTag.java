@@ -18,12 +18,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerEntityRenderer.class)
-public class MixinPlayerEntityRendererNameTag {
+public abstract class MixinPlayerEntityRendererNameTag {
     private static final Identifier DRAGONCLIENT_NAME_TAG_ICON =
         Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final float DRAGONCLIENT_NAME_TAG_ICON_WIDTH = 7.0f;
     private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 7.0f;
     private static final float DRAGONCLIENT_NAME_TAG_ICON_GAP = 2.0f;
+
+    @org.spongepowered.asm.mixin.Shadow
+    protected abstract void renderLabelIfPresent(
+        AbstractClientPlayerEntity player,
+        Text text,
+        MatrixStack matrices,
+        VertexConsumerProvider vertexConsumers,
+        int light,
+        float tickDelta
+    );
 
     private boolean dragonclient$shouldForceNameTag(Entity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -32,16 +42,31 @@ public class MixinPlayerEntityRendererNameTag {
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$hasLabelOld(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(entity)) {
-            cir.setReturnValue(true);
-        }
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$hasLabelNew(Entity entity, double distance, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(entity)) {
-            cir.setReturnValue(true);
+    }
+
+    @Inject(
+        method = "render(Lnet/minecraft/client/network/AbstractClientPlayerEntity;FFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
+        at = @At("TAIL"),
+        require = 0
+    )
+    private void dragonclient$renderOwnPlayerNameTag(
+        AbstractClientPlayerEntity player,
+        float yaw,
+        float tickDelta,
+        MatrixStack matrices,
+        VertexConsumerProvider vertexConsumers,
+        int light,
+        CallbackInfo ci
+    ) {
+        if (!dragonclient$shouldForceNameTag(player)) {
+            return;
         }
+
+        this.renderLabelIfPresent(player, player.getDisplayName().copy(), matrices, vertexConsumers, light, tickDelta);
     }
 
     @Inject(

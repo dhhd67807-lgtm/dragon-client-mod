@@ -2,6 +2,7 @@ package com.dragonclient.mixin;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
+import net.minecraft.client.input.MouseInput;
 import net.minecraft.client.gui.screen.Screen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -34,15 +35,18 @@ public abstract class MixinMouse {
     @Shadow
     private double y;
     
-    // 1.21.1-1.21.10 use old signature: onMouseButton(long window, int button, int action, int mods)
+    // 1.21.10 moved button input to MouseInput but our screens still expose double/int helpers.
     @Inject(method = "onMouseButton", at = @At("HEAD"))
-    private void onMouseButtonHead(long window, int button, int action, int mods, CallbackInfo ci) {
+    private void onMouseButtonHead(long window, MouseInput mouseInput, int action, CallbackInfo ci) {
         try {
             MinecraftClient client = MinecraftClient.getInstance();
+            int button = mouseInput.button();
+            int modifiers = mouseInput.modifiers();
             
             if (mouseLog != null) {
                 mouseLog.println("\n=== onMouseButton called ===");
                 mouseLog.println("  window=" + window + " button=" + button + " action=" + action);
+                mouseLog.println("  modifiers=" + modifiers);
                 mouseLog.println("  client=" + (client != null ? "present" : "null"));
                 mouseLog.println("  currentScreen=" + (client != null && client.currentScreen != null ? 
                     client.currentScreen.getClass().getSimpleName() : "null"));

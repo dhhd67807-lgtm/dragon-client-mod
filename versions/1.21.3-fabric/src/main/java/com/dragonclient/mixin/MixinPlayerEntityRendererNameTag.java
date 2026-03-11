@@ -66,9 +66,9 @@ public class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        state.displayName = null;
+        state.displayName = entity.getDisplayName().copy();
         state.nameLabelPos = new Vec3d(0.0, entity.getHeight() + 0.2, 0.0);
-        state.playerName = entity.getDisplayName().copy();
+        state.playerName = null;
     }
 
     @Inject(
@@ -84,7 +84,8 @@ public class MixinPlayerEntityRendererNameTag {
         int light,
         CallbackInfo ci
     ) {
-        if (!dragonclient$shouldRenderOwnNameTag(state) || state.playerName == null) {
+        Text nameText = text != null ? text : state.displayName;
+        if (!dragonclient$shouldRenderOwnNameTag(state) || nameText == null) {
             return;
         }
 
@@ -93,7 +94,7 @@ public class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        float nameWidth = client.textRenderer.getWidth(state.playerName);
+        float nameWidth = client.textRenderer.getWidth(nameText);
         float iconLeft = -nameWidth / 2.0f - DRAGONCLIENT_NAME_TAG_ICON_GAP - DRAGONCLIENT_NAME_TAG_ICON_WIDTH;
         float iconTop = 1.0f;
         MatrixStack.Entry entry = matrices.peek();
