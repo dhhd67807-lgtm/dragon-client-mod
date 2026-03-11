@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "dragonclient:gui/cs_star_8.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE000"]
+    }
+  ]
+}

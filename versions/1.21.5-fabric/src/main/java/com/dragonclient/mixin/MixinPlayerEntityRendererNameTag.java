@@ -8,6 +8,7 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -20,6 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinPlayerEntityRendererNameTag {
     private static final Identifier DRAGONCLIENT_NAME_TAG_ICON =
         Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
+    private static final Identifier DRAGONCLIENT_NAME_TAG_FONT =
+        Identifier.of("dragonclient", "nametag_icons");
     private static final float DRAGONCLIENT_NAME_TAG_ICON_WIDTH = 7.0f;
     private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 7.0f;
     private static final float DRAGONCLIENT_NAME_TAG_ICON_GAP = 2.0f;
@@ -32,6 +35,12 @@ public class MixinPlayerEntityRendererNameTag {
     private boolean dragonclient$shouldRenderOwnNameTag(PlayerEntityRenderState state) {
         MinecraftClient client = MinecraftClient.getInstance();
         return client != null && client.player != null && state.id == client.player.getId();
+    }
+
+    private Text dragonclient$withNameTagIcon(Text name) {
+        return Text.empty()
+            .append(Text.literal("\uE000 ").setStyle(Style.EMPTY.withFont(DRAGONCLIENT_NAME_TAG_FONT)))
+            .append(name.copy());
     }
 
     @Inject(
@@ -49,9 +58,9 @@ public class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        state.displayName = null;
+        state.displayName = dragonclient$withNameTagIcon(entity.getDisplayName());
         state.nameLabelPos = new Vec3d(0.0, entity.getHeight() + 0.2, 0.0);
-        state.playerName = entity.getDisplayName().copy();
+        state.playerName = null;
     }
 
     @Inject(
@@ -67,40 +76,7 @@ public class MixinPlayerEntityRendererNameTag {
         int light,
         CallbackInfo ci
     ) {
-        if (!dragonclient$shouldRenderOwnNameTag(state) || state.playerName == null) {
-            return;
-        }
-
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.textRenderer == null) {
-            return;
-        }
-
-        float nameWidth = client.textRenderer.getWidth(state.playerName);
-        float iconLeft = -nameWidth / 2.0f - DRAGONCLIENT_NAME_TAG_ICON_GAP - DRAGONCLIENT_NAME_TAG_ICON_WIDTH;
-        float iconTop = 1.0f;
-        MatrixStack.Entry entry = matrices.peek();
-
-        dragonclient$drawIcon(
-            entry,
-            vertexConsumers.getBuffer(RenderLayer.getTextSeeThrough(DRAGONCLIENT_NAME_TAG_ICON)),
-            iconLeft,
-            iconTop,
-            DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
-            DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
-            light,
-            0xA0FFFFFF
-        );
-        dragonclient$drawIcon(
-            entry,
-            vertexConsumers.getBuffer(RenderLayer.getText(DRAGONCLIENT_NAME_TAG_ICON)),
-            iconLeft,
-            iconTop,
-            DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
-            DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
-            light,
-            0xFFFFFFFF
-        );
+        // Older versions render the icon inline through a custom font glyph.
     }
 
     private static void dragonclient$drawIcon(
