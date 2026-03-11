@@ -1,5 +1,6 @@
 package com.dragonclient;
 
+import com.dragonclient.cosmetics.CapeManager;
 import com.dragonclient.gui.hud.HudRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -48,6 +49,8 @@ public class DragonClientClient implements ClientModInitializer {
 
         // Register tick event for keybind checking
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            CapeManager.getInstance().tick();
+
             // 1.21.11: Keybindings disabled due to API incompatibility
             if (openGuiKey != null) {
                 while (openGuiKey.wasPressed()) {

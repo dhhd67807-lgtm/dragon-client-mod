@@ -9,16 +9,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class CapeManager {
+    private static final String ANIMATED_CAPE_RESOURCE = "assets/dragonclient/textures/capes/cape5.gif";
     private static CapeManager instance;
     private int equippedCapeIndex = -1;
     private static final Identifier CAPE_1 = Identifier.of("dragonclient", "textures/capes/cape1.png");
     private static final Identifier CAPE_2 = Identifier.of("dragonclient", "textures/capes/cape2.png");
     private static final Identifier CAPE_3 = Identifier.of("dragonclient", "textures/capes/cape3.png");
     private static final Identifier CAPE_4 = Identifier.of("dragonclient", "textures/capes/cape4.png");
+    private static final Identifier CAPE_5 = Identifier.of("dragonclient", "dynamic/capes/cape5_animated");
     private final Gson gson = new Gson();
     private Path selectedCapePath;
     private long lastLoadedAtMs = 0L;
     private long lastSelectedCapeFileMtime = Long.MIN_VALUE;
+    private AnimatedCapeTexture animatedCapeTexture;
     
     private CapeManager() {
         initializePaths();
@@ -51,6 +54,8 @@ public class CapeManager {
             return CAPE_3;
         } else if (equippedCapeIndex == 3) {
             return CAPE_4;
+        } else if (equippedCapeIndex == 4) {
+            return ensureAnimatedCapeTexture();
         }
         return null;
     }
@@ -58,6 +63,13 @@ public class CapeManager {
     public boolean hasCapeEquipped() {
         refreshIfNeeded();
         return equippedCapeIndex >= 0;
+    }
+
+    public void tick() {
+        refreshIfNeeded();
+        if (equippedCapeIndex == 4 && animatedCapeTexture != null) {
+            animatedCapeTexture.tick();
+        }
     }
     
     private void initializePaths() {
@@ -116,5 +128,16 @@ public class CapeManager {
         } catch (Exception e) {
             System.err.println("[DragonClient] Failed to load selected_cape.json: " + e.getMessage());
         }
+    }
+
+    private Identifier ensureAnimatedCapeTexture() {
+        if (animatedCapeTexture == null) {
+            animatedCapeTexture = AnimatedCapeTexture.load(
+                CAPE_5,
+                "dragonclient_animated_cape_5",
+                ANIMATED_CAPE_RESOURCE
+            );
+        }
+        return animatedCapeTexture != null ? CAPE_5 : null;
     }
 }

@@ -73,7 +73,7 @@ public class MixinPlayerEntityRendererNameTag {
 
     @Inject(
         method = "renderLabelIfPresent(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
-        at = @At("TAIL"),
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;pop()V", shift = At.Shift.BEFORE),
         require = 0
     )
     private void dragonclient$renderNameTagIcon(
