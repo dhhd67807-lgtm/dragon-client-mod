@@ -2,6 +2,7 @@ package com.dragonclient.mixin;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -97,6 +98,7 @@ public class MixinPlayerEntityRendererNameTag {
         float nameWidth = client.textRenderer.getWidth(nameText);
         float iconLeft = -nameWidth / 2.0f - DRAGONCLIENT_NAME_TAG_ICON_GAP - DRAGONCLIENT_NAME_TAG_ICON_WIDTH;
         float iconTop = 1.0f;
+        int iconLight = LightmapTextureManager.applyEmission(light, 2);
         MatrixStack.Entry entry = matrices.peek();
 
         dragonclient$drawIcon(
@@ -106,7 +108,7 @@ public class MixinPlayerEntityRendererNameTag {
             iconTop,
             DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
             DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
-            light,
+            iconLight,
             0xA0FFFFFF
         );
         dragonclient$drawIcon(
@@ -116,7 +118,7 @@ public class MixinPlayerEntityRendererNameTag {
             iconTop,
             DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
             DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
-            light,
+            iconLight,
             0xFFFFFFFF
         );
     }
