@@ -2,7 +2,7 @@ plugins {
     id("base")
 }
 
-version = "2.0.72"
+version = "2.0.74"
 
 allprojects {
     group = "com.dragonclient"

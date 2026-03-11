@@ -18,7 +18,14 @@ public class MixinEntityRendererNameTag {
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabel(Entity entity, CallbackInfoReturnable<Boolean> cir) {
+    private void dragonclient$hasLabelOld(Entity entity, CallbackInfoReturnable<Boolean> cir) {
+        if (dragonclient$shouldForceNameTag(entity)) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
+    private void dragonclient$hasLabelNew(Entity entity, double distance, CallbackInfoReturnable<Boolean> cir) {
         if (dragonclient$shouldForceNameTag(entity)) {
             cir.setReturnValue(true);
         }
