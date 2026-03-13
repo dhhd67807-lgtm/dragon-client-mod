@@ -1,5 +1,15 @@
 package com.dragonclient.mixin;
 
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import org.spongepowered.asm.mixin.injection.Inject;
+
+import org.spongepowered.asm.mixin.injection.At;
+
+import net.minecraft.text.Text;
+
+import com.dragonclient.util.TierTagManager;
+
 import com.dragonclient.cosmetics.CapeManager;
 import com.dragonclient.cosmetics.SkinManager;
 import net.minecraft.client.MinecraftClient;

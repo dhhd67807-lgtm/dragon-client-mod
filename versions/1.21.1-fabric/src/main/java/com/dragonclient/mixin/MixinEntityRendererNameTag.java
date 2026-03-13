@@ -1,5 +1,6 @@
 package com.dragonclient.mixin;
 
+import com.dragonclient.module.visual.NametagModule;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.entity.Entity;
@@ -14,7 +15,7 @@ public class MixinEntityRendererNameTag {
 
     private boolean dragonclient$shouldForceNameTag(Entity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
-        return entity instanceof PlayerEntity && client != null && entity == client.player;
+        return NametagModule.enabled && entity instanceof PlayerEntity && client != null && entity == client.player;
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)

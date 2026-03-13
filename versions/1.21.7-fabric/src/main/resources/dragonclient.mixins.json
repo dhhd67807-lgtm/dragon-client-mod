@@ -5,15 +5,24 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "MixinGameRenderer",
+    "MixinKeyboardZoom",
+    "MixinEntityFreelook",
+    "MixinCameraFreelook",
     "MixinInGameHud",
     "MixinPlayerEntity",
     "MixinClientPlayerEntity",
     "MixinMouseHandler",
     "MixinChatScreen",
+    "MixinGameMenuScreenLogo",
     "MixinGameOptions",
     "MixinAbstractClientPlayerEntity",
+    "MixinItemEntityRendererPhysics",
     "MixinEntityRendererNameTag",
-    "MixinPlayerEntityRendererNameTag"
+    "MixinClientWorldVisuals",
+    "MixinPlayerEntityRendererNameTag",
+    "MixinSplashOverlay",
+    "MixinTitleScreen",
+    "MixinPressableTextWidget"
   ],
   "injectors": {
     "defaultRequire": 1

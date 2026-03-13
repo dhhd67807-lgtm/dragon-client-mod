@@ -1,5 +1,5 @@
 plugins {
-    id("fabric-loom") version "1.12.7"
+    id("fabric-loom") version "1.14.7"
     kotlin("jvm") version "2.0.21"
 }
 
@@ -11,6 +11,7 @@ base.archivesName.set("dragon-client-$mcVersion")
 repositories {
     mavenCentral()
     maven("https://maven.fabricmc.net")
+    maven("https://api.modrinth.com/maven")
 }
 
 loom {
@@ -22,6 +23,10 @@ dependencies {
     mappings("net.fabricmc:yarn:${project.property("yarn_mappings")}:v2")
     modImplementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+
+    val continuity = "maven.modrinth:continuity:3.0.1-beta.1+1.21.11"
+    modImplementation(continuity)
+    include(continuity)
     
     // Mixin Extras for @Local annotation support
     implementation("io.github.llamalad7:mixinextras-fabric:0.4.1")

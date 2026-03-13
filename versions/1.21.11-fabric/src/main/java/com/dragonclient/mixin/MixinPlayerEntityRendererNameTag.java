@@ -1,5 +1,8 @@
 package com.dragonclient.mixin;
 
+import com.dragonclient.module.visual.NametagModule;
+import com.dragonclient.module.visual.TierTaggerModule;
+import com.dragonclient.util.TierTagManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.RenderLayers;
@@ -21,22 +24,32 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Locale;
+
 @Mixin(PlayerEntityRenderer.class)
 public class MixinPlayerEntityRendererNameTag {
     private static final Identifier DRAGONCLIENT_NAME_TAG_ICON =
         Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
-    private static final float DRAGONCLIENT_NAME_TAG_ICON_WIDTH = 7.0f;
-    private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 7.0f;
-    private static final float DRAGONCLIENT_NAME_TAG_ICON_GAP = 2.0f;
+    private static final float DRAGONCLIENT_NAME_TAG_ICON_WIDTH = 6.0f;
+    private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 6.0f;
+    private static final int DRAGONCLIENT_STAR_PADDING_SPACES = 2;
+    private static final float DRAGONCLIENT_TIER_ICON_WIDTH = 6.0f;
+    private static final float DRAGONCLIENT_TIER_ICON_HEIGHT = 6.0f;
+    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.25f;
 
     private boolean dragonclient$shouldForceNameTag(Entity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
-        return entity instanceof PlayerEntity && client != null && entity == client.player;
+        return NametagModule.enabled && entity instanceof PlayerEntity && client != null && entity == client.player;
     }
 
     private boolean dragonclient$shouldRenderOwnNameTag(PlayerEntityRenderState state) {
         MinecraftClient client = MinecraftClient.getInstance();
         return client != null && client.player != null && state.id == client.player.getId();
+    }
+
+    private Text dragonclient$withStarPadding(Text name) {
+        // Reserve space so the textured star can render between tier and name.
+        return Text.literal(" ".repeat(DRAGONCLIENT_STAR_PADDING_SPACES)).append(name.copy());
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
@@ -56,14 +69,29 @@ public class MixinPlayerEntityRendererNameTag {
     @Inject(method = "updateRenderState(Lnet/minecraft/entity/Entity;Lnet/minecraft/client/render/entity/state/EntityRenderState;F)V",
             at = @At("TAIL"), require = 0)
     private void dragonclient$forcePlayerLabelState(Entity entity, EntityRenderState state, float tickDelta, CallbackInfo ci) {
-        if (!(state instanceof PlayerEntityRenderState playerState) || !dragonclient$shouldForceNameTag(entity)) {
+        if (!(state instanceof PlayerEntityRenderState playerState)) {
+            return;
+        }
+
+        Text baseName = entity.getDisplayName().copy();
+        Text decoratedName = TierTagManager.decorateName(baseName, entity.getName().getString());
+
+        if (TierTaggerModule.enabled) {
+            state.displayName = null;
+            playerState.playerName = decoratedName;
+        }
+
+        if (!dragonclient$shouldForceNameTag(entity)) {
             return;
         }
 
         // Keep one clean nametag line a little lower above the head.
         state.displayName = null;
         state.nameLabelPos = new Vec3d(0.0, entity.getHeight() + 0.2, 0.0);
-        playerState.playerName = entity.getDisplayName().copy();
+        playerState.playerName = TierTagManager.decorateName(
+            dragonclient$withStarPadding(baseName),
+            entity.getName().getString()
+        );
     }
 
     @Inject(
@@ -83,14 +111,20 @@ public class MixinPlayerEntityRendererNameTag {
         }
 
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.textRenderer == null) {
+        if (client == null || client.textRenderer == null || client.player == null) {
             return;
         }
 
-        float nameWidth = client.textRenderer.getWidth(state.playerName);
-        float textLeft = -nameWidth / 2.0f;
+        String tier = TierTagManager.getTierForPlayer(client.player.getName().getString());
+        float fullWidth = client.textRenderer.getWidth(state.playerName);
+        float nameOnlyWidth = client.textRenderer.getWidth(client.player.getName());
+        float textLeft = -fullWidth / 2.0f;
+        float nameLeft = textLeft + (fullWidth - nameOnlyWidth);
         float textTop = state.extraEars ? -10.0f : 0.0f;
-        float iconLeft = textLeft - DRAGONCLIENT_NAME_TAG_ICON_GAP - DRAGONCLIENT_NAME_TAG_ICON_WIDTH;
+        float reservedWidth = client.textRenderer.getWidth(" ") * DRAGONCLIENT_STAR_PADDING_SPACES;
+        float tierEnd = nameLeft - reservedWidth;
+        float iconLeft = tierEnd + ((reservedWidth - DRAGONCLIENT_NAME_TAG_ICON_WIDTH) * 0.5f);
+        float tierIconLeft = textLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
         float iconTop = textTop + 1.0f;
         int litLight = LightmapTextureManager.applyEmission(state.light, 2);
 
@@ -98,6 +132,17 @@ public class MixinPlayerEntityRendererNameTag {
         matrices.translate(state.nameLabelPos.x, state.nameLabelPos.y + 0.5, state.nameLabelPos.z);
         matrices.multiply(cameraState.orientation);
         matrices.scale(0.025f, -0.025f, 0.025f);
+
+        if (tier != null && !tier.isBlank()) {
+            Identifier tierIcon = Identifier.of("dragonclient", "textures/tier_tags/" + tier.toLowerCase(Locale.ROOT) + ".png");
+            queue.submitCustom(matrices, RenderLayers.textSeeThrough(tierIcon),
+                (entry, vertexConsumer) -> dragonclient$drawIcon(entry, vertexConsumer, tierIconLeft, iconTop,
+                    DRAGONCLIENT_TIER_ICON_WIDTH, DRAGONCLIENT_TIER_ICON_HEIGHT, litLight, 0xA0FFFFFF));
+
+            queue.submitCustom(matrices, RenderLayers.text(tierIcon),
+                (entry, vertexConsumer) -> dragonclient$drawIcon(entry, vertexConsumer, tierIconLeft, iconTop,
+                    DRAGONCLIENT_TIER_ICON_WIDTH, DRAGONCLIENT_TIER_ICON_HEIGHT, litLight, 0xFFFFFFFF));
+        }
 
         // See-through pass to match label readability through geometry.
         queue.submitCustom(matrices, RenderLayers.textSeeThrough(DRAGONCLIENT_NAME_TAG_ICON),

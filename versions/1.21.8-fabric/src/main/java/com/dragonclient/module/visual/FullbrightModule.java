@@ -5,7 +5,7 @@ import com.dragonclient.module.ModuleCategory;
 import net.minecraft.client.MinecraftClient;
 
 public class FullbrightModule extends Module {
-    private double previousGamma;
+    private Double previousGamma;
 
     public FullbrightModule() {
         super("Fullbright", "See in the dark", ModuleCategory.VISUAL);
@@ -14,6 +14,10 @@ public class FullbrightModule extends Module {
     @Override
     protected void onEnable() {
         MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.options == null) {
+            return;
+        }
+
         previousGamma = client.options.getGamma().getValue();
         client.options.getGamma().setValue(16.0);
     }
@@ -21,6 +25,10 @@ public class FullbrightModule extends Module {
     @Override
     protected void onDisable() {
         MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.options == null || previousGamma == null) {
+            return;
+        }
+
         client.options.getGamma().setValue(previousGamma);
     }
 }

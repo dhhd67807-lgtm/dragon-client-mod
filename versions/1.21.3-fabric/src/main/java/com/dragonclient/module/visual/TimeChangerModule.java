@@ -5,7 +5,7 @@ import com.dragonclient.module.ModuleCategory;
 
 public class TimeChangerModule extends Module {
     public static boolean enabled = false;
-    public static long customTime = 6000; // Noon
+    public static long customTime = 18000; // Midnight for a clearly visible effect
 
     public TimeChangerModule() {
         super("Time Changer", "Change time client-side", ModuleCategory.VISUAL);

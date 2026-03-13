@@ -60,24 +60,37 @@ public class ModuleConfig {
         try (FileReader reader = new FileReader(CONFIG_FILE)) {
             JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
             JsonObject modulesObj = root.getAsJsonObject("modules");
+            if (modulesObj == null) {
+                return;
+            }
             
             for (Module module : modules) {
-                if (modulesObj.has(module.getName())) {
+                if (!modulesObj.has(module.getName())) {
+                    continue;
+                }
+
+                try {
                     JsonObject moduleData = modulesObj.getAsJsonObject(module.getName());
-                    
+                    if (moduleData == null || !moduleData.has("enabled")) {
+                        continue;
+                    }
+
                     boolean enabled = moduleData.get("enabled").getAsBoolean();
                     if (enabled) {
                         module.enable();
                     } else {
                         module.disable();
                     }
-                    
-                    if (module instanceof HudModule && moduleData.has("x")) {
+
+                    if (module instanceof HudModule && moduleData.has("x") && moduleData.has("y") && moduleData.has("scale")) {
                         HudModule hud = (HudModule) module;
                         hud.setX(moduleData.get("x").getAsInt());
                         hud.setY(moduleData.get("y").getAsInt());
                         hud.setScale(moduleData.get("scale").getAsFloat());
                     }
+                } catch (Exception moduleError) {
+                    System.err.println("[DragonClient] Failed to load module state for '" + module.getName() + "': " + moduleError.getMessage());
+                    moduleError.printStackTrace();
                 }
             }
         } catch (Exception e) {

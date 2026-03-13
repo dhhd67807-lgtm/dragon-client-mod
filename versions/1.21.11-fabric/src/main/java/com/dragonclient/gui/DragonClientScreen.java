@@ -31,33 +31,15 @@ public class DragonClientScreen extends Screen {
     private static final Identifier ICON_2 = Identifier.of("dragonclient", "textures/gui/2.png");
     private static final Identifier ICON_4 = Identifier.of("dragonclient", "textures/gui/4.png");
     private static final Identifier ULTRA_ICON = Identifier.of("dragonclient", "textures/gui/ultra.png");
-    
-    // Custom font identifier
-    private static final Identifier BEBAS_FONT = Identifier.of("minecraft", "dragon");
-    
     private int guiLeft;
     private int guiTop;
     private int scaledWidth;
     private int scaledHeight;
-    private TextRenderer bebasFont;
     private float scrollOffset = 0;
     
     public DragonClientScreen() {
         super(Text.literal("Dragon Client"));
         this.modules = new ArrayList<>(DragonClientMod.getInstance().getModuleManager().getModules());
-        // Get the Bebas Neue font
-        MinecraftClient client = MinecraftClient.getInstance();
-        try {
-            // Access the font manager through reflection to get custom font
-            var fontManagerField = MinecraftClient.class.getDeclaredField("field_1772"); // fontManager field
-            fontManagerField.setAccessible(true);
-            var fontManager = fontManagerField.get(client);
-            var getTextRendererMethod = fontManager.getClass().getMethod("method_27542", Identifier.class);
-            this.bebasFont = (TextRenderer) getTextRendererMethod.invoke(fontManager, BEBAS_FONT);
-        } catch (Exception e) {
-            // Fallback to default font if custom font fails to load
-            this.bebasFont = client.textRenderer;
-        }
     }
 
     @Override
@@ -72,24 +54,22 @@ public class DragonClientScreen extends Screen {
         this.guiTop = (scaledHeight - GUI_HEIGHT) / 2;
     }
     
-    // Helper method to draw text with better rendering using custom font
+    // Helper method to draw text with default Minecraft font
     private void drawStyledText(DrawContext context, String text, int x, int y, int color, boolean shadow) {
-        TextRenderer font = this.bebasFont != null ? this.bebasFont : this.textRenderer;
         if (shadow) {
-            context.drawTextWithShadow(font, text, x, y, color);
+            context.drawTextWithShadow(this.textRenderer, text, x, y, color);
         } else {
-            context.drawText(font, text, x, y, color, false);
+            context.drawText(this.textRenderer, text, x, y, color, false);
         }
     }
-    
-    // Helper method to draw centered text with custom styling
+
+    // Helper method to draw centered text with default Minecraft font
     private void drawCenteredStyledText(DrawContext context, String text, int x, int y, int color, boolean shadow) {
-        TextRenderer font = this.bebasFont != null ? this.bebasFont : this.textRenderer;
-        int textWidth = font.getWidth(text);
+        int textWidth = this.textRenderer.getWidth(text);
         if (shadow) {
-            context.drawTextWithShadow(font, text, x - textWidth / 2, y, color);
+            context.drawTextWithShadow(this.textRenderer, text, x - textWidth / 2, y, color);
         } else {
-            context.drawText(font, text, x - textWidth / 2, y, color, false);
+            context.drawText(this.textRenderer, text, x - textWidth / 2, y, color, false);
         }
     }
 
@@ -141,9 +121,8 @@ public class DragonClientScreen extends Screen {
         // Draw star icon (blending automatic in 1.21.11)
         drawTexture(context, STAR_ICON, starX, starY, starSize, starSize);
         
-        // Draw title text after star with enhanced styling using Bebas Neue font
-        TextRenderer font = this.bebasFont != null ? this.bebasFont : this.textRenderer;
-        context.drawTextWithShadow(font, title, starX + starSize + 5, fixedGuiTop + 20, 0xFFFEFEFE);
+        // Draw title text after star with custom dragon font
+        context.drawTextWithShadow(this.textRenderer, title, starX + starSize + 5, fixedGuiTop + 20, 0xFFFEFEFE);
         
         // Draw close button (X) with hover effect
         int closeX = fixedGuiLeft + GUI_WIDTH - 35;
@@ -221,10 +200,21 @@ public class DragonClientScreen extends Screen {
                                            transformedMouseY >= cardY && transformedMouseY <= cardY + CARD_HEIGHT;
                     
                     // Draw solid card background first
-                    drawRoundedRect(context, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, 0xFF252220);
+                    String normalizedModuleName = module.getName() == null ? "" : module.getName().replace(" ", "");
+                    boolean isTierTaggerCard = "TierTagger".equalsIgnoreCase(normalizedModuleName);
+                    boolean isFreelookCard = "Freelook".equalsIgnoreCase(normalizedModuleName);
+                    int cardBackgroundColor = isTierTaggerCard ? 0xFF3A2C12 : (isFreelookCard ? 0xFF1A2940 : 0xFF252220);
+                    drawRoundedRect(context, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, cardBackgroundColor);
                     
-                    // Draw card texture as overlay with pink hue for first 3 cards
-                    if (cardIndex < 3) {
+                    // Draw card texture overlay:
+                    // - Gold hue for TierTagger card
+                    // - Pink hue for first 3 cards
+                    // - White tint for all other cards
+                    if (isTierTaggerCard) {
+                        drawTextureWithColor(context, CARD_TEXTURE, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, 0x66FFD54F);
+                    } else if (isFreelookCard) {
+                        drawTextureWithColor(context, CARD_TEXTURE, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, 0x66529BFF);
+                    } else if (cardIndex < 3) {
                         // Pink hue for new cards (pink tint with 25% opacity)
                         drawTextureWithColor(context, CARD_TEXTURE, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, 0x40FF66B2);
                     } else {
@@ -338,6 +328,18 @@ public class DragonClientScreen extends Screen {
                 int col = cardIndex % CARDS_PER_ROW;
                 int cardX = startX + (col * (CARD_WIDTH + CARD_SPACING));
                 int cardY = startY + (row * (CARD_HEIGHT + CARD_SPACING));
+                
+                // Check if settings icon was clicked (top right corner)
+                int settingsX = cardX + CARD_WIDTH - 25;
+                int settingsY = cardY + 10;
+                int settingsSize = 20;
+                
+                if (mx >= settingsX && mx <= settingsX + settingsSize &&
+                    my >= settingsY && my <= settingsY + settingsSize) {
+                    // Open module options screen
+                    MinecraftClient.getInstance().setScreen(new ModuleOptionsScreen(this, module));
+                    return true;
+                }
                 
                 // Check if toggle button was clicked
                 int buttonBgX = cardX + 10;

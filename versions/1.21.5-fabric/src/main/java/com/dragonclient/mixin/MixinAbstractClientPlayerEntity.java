@@ -1,5 +1,9 @@
 package com.dragonclient.mixin;
 
+import net.minecraft.text.Text;
+
+import com.dragonclient.util.TierTagManager;
+
 import com.dragonclient.cosmetics.CapeManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;

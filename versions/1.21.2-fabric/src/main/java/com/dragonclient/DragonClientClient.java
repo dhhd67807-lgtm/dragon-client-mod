@@ -1,57 +1,59 @@
 package com.dragonclient;
 
 import com.dragonclient.gui.hud.HudRenderer;
+import com.dragonclient.module.movement.FreelookModule;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
 public class DragonClientClient implements ClientModInitializer {
-    
+
     private static KeyBinding openGuiKey;
     private static KeyBinding hudEditorKey;
+    private static KeyBinding zoomKey;
     private HudRenderer hudRenderer;
 
     @Override
     public void onInitializeClient() {
         DragonClientMod.LOGGER.info("Initializing Dragon Client (Client-side)");
-        
-        // Initialize texture debug logger
-        com.dragonclient.util.TextureDebugLogger.log("=== Dragon Client 1.21.11 Starting ===");
-        com.dragonclient.util.TextureDebugLogger.log("Log file location: " + com.dragonclient.util.TextureDebugLogger.getLogFilePath());
 
-        // Register keybindings (1.21.11: Constructor signature is (String, InputUtil.Type, int, Category))
         openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "key.dragonclient.open_gui",
             InputUtil.Type.KEYSYM,
             GLFW.GLFW_KEY_RIGHT_SHIFT,
-            KeyBinding.Category.MISC
+            "key.categories.misc"
         ));
 
         hudEditorKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "key.dragonclient.hud_editor",
             InputUtil.Type.KEYSYM,
             GLFW.GLFW_KEY_H,
-            KeyBinding.Category.MISC
+            "key.categories.misc"
         ));
 
-        // Register command as alternative
-        net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback.EVENT.register(
-            (dispatcher, registryAccess) -> com.dragonclient.command.DragonClientCommand.register(dispatcher, registryAccess)
-        );
+        zoomKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+            "key.dragonclient.zoom",
+            InputUtil.Type.KEYSYM,
+            GLFW.GLFW_KEY_C,
+            "key.categories.misc"
+        ));
 
-        // Initialize HUD renderer (rendering handled by MixinInGameHud)
         hudRenderer = new HudRenderer();
 
-        // Register tick event for keybind checking
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            // 1.21.11: Keybindings disabled due to API incompatibility
+            if (FreelookModule.isFreelooking) {
+                if (client == null || client.player == null || client.currentScreen != null) {
+                    FreelookModule.stopFreelook(client);
+                } else {
+                    FreelookModule.enforceLockedRotation(client);
+                }
+            }
+
             if (openGuiKey != null) {
                 while (openGuiKey.wasPressed()) {
-                    // Open Dragon Menu
                     if (client.currentScreen == null) {
                         client.setScreen(new com.dragonclient.gui.DragonMenuScreen());
                     }
@@ -60,7 +62,6 @@ public class DragonClientClient implements ClientModInitializer {
 
             if (hudEditorKey != null) {
                 while (hudEditorKey.wasPressed()) {
-                    // Open HUD editor
                     if (client.currentScreen == null) {
                         client.setScreen(new com.dragonclient.gui.HudEditorScreen());
                     }
@@ -77,5 +78,9 @@ public class DragonClientClient implements ClientModInitializer {
 
     public static KeyBinding getHudEditorKey() {
         return hudEditorKey;
+    }
+
+    public static KeyBinding getZoomKey() {
+        return zoomKey;
     }
 }

@@ -1,0 +1,45 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": "gui",
+        "model": {
+          "type": "minecraft:condition",
+          "property": "minecraft:keybind_down",
+          "keybind": "key.sneak",
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "minecraft:item/snout_armor_trim_smithing_template"
+          },
+          "on_false": {
+            "type": "minecraft:condition",
+            "property": "minecraft:extended_view",
+            "on_true": {
+              "type": "minecraft:composite",
+              "models": [
+                {
+                  "type": "minecraft:model",
+                  "model": "minecraft:item/snout_armor_trim_smithing_template"
+                },
+                {
+                  "type": "minecraft:model",
+                  "model": "minecraft:item/trim_preview/snout_cycle"
+                }
+              ]
+            },
+            "on_false": {
+              "type": "minecraft:model",
+              "model": "minecraft:item/snout_armor_trim_smithing_template"
+            }
+          }
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/snout_armor_trim_smithing_template"
+    }
+  }
+}

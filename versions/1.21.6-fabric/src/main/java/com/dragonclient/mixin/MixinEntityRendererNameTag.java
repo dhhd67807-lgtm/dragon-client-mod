@@ -1,57 +1,40 @@
 package com.dragonclient.mixin;
 
+import com.dragonclient.module.visual.NametagModule;
+import com.dragonclient.util.NametagDebugLogger;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.state.EntityRenderState;
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.render.entity.LivingEntityRenderer;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(EntityRenderer.class)
+@Mixin(LivingEntityRenderer.class)
 public class MixinEntityRendererNameTag {
 
-    private boolean dragonclient$shouldForceNameTag(Entity entity) {
+    private boolean dragonclient$shouldForceNameTag(LivingEntity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
-        return entity instanceof PlayerEntity && client != null && entity == client.player;
+        boolean shouldForce = NametagModule.enabled && entity instanceof PlayerEntity && client != null && entity == client.player;
+        NametagDebugLogger.logEvery(
+            "livingrenderer-should-force",
+            2000,
+            "LivingEntityRenderer.shouldForceNameTag: " + shouldForce +
+                ", entityClass=" + (entity == null ? "null" : entity.getClass().getName())
+        );
+        return shouldForce;
     }
 
-    private boolean dragonclient$shouldForceNameTag(EntityRenderState state) {
-        if (!(state instanceof PlayerEntityRenderState playerState)) {
-            return false;
-        }
-        MinecraftClient client = MinecraftClient.getInstance();
-        return client != null && client.player != null && playerState.id == client.player.getId();
-    }
-
-    @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelOld(Entity entity, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hasLabel(Lnet/minecraft/entity/LivingEntity;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
+    private void dragonclient$hasLabel(LivingEntity entity, double distance, CallbackInfoReturnable<Boolean> cir) {
         if (dragonclient$shouldForceNameTag(entity)) {
             cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelNew(Entity entity, double distance, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(entity)) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "hasLabel(Lnet/minecraft/client/render/entity/state/EntityRenderState;)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelState(EntityRenderState state, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(state)) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "hasLabel(Lnet/minecraft/client/render/entity/state/EntityRenderState;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dragonclient$hasLabelStateDistance(EntityRenderState state, double distance, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(state)) {
-            cir.setReturnValue(true);
+            NametagDebugLogger.logEvery(
+                "livingrenderer-haslabel-force",
+                1000,
+                "LivingEntityRenderer.hasLabel forced true for local player at distance=" + distance
+            );
         }
     }
 }

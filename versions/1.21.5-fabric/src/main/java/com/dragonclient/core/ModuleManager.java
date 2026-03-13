@@ -43,6 +43,7 @@ public class ModuleManager {
         registerModule(new ClearWaterModule());
         registerModule(new ItemPhysicsModule());
         registerModule(new NametagModule());
+        registerModule(new TierTaggerModule());
 
         // Register Movement modules
         registerModule(new FreelookModule());
