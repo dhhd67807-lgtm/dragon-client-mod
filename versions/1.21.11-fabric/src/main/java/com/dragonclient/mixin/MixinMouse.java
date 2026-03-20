@@ -53,16 +53,17 @@ public class MixinMouse {
             // Handle HudEditorScreen and DragonClientScreen (check both simple and full class names)
             boolean isHudEditor = screenName.equals("HudEditorScreen") || fullClassName.contains("HudEditorScreen");
             boolean isDragonClient = screenName.equals("DragonClientScreen") || fullClassName.contains("DragonClientScreen");
-            
-            if (!isHudEditor && !isDragonClient) {
+            boolean isDragonSkins = screenName.equals("DragonSkinsScreen") || fullClassName.contains("DragonSkinsScreen");
+
+            if (!isHudEditor && !isDragonClient && !isDragonSkins) {
                 if (mouseLog != null) {
-                    mouseLog.println("  SKIP: Not HudEditorScreen or DragonClientScreen");
+                    mouseLog.println("  SKIP: Not HudEditorScreen, DragonClientScreen or DragonSkinsScreen");
                     mouseLog.flush();
                 }
                 return;
             }
             
-            String detectedScreen = isHudEditor ? "HudEditorScreen" : "DragonClientScreen";
+            String detectedScreen = isHudEditor ? "HudEditorScreen" : (isDragonSkins ? "DragonSkinsScreen" : "DragonClientScreen");
             
             if (mouseLog != null) {
                 mouseLog.println("  " + detectedScreen + " detected!");

@@ -1,43 +1,82 @@
 package com.dragonclient.mixin;
 
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import org.spongepowered.asm.mixin.injection.Inject;
+
+import org.spongepowered.asm.mixin.injection.At;
+
 import net.minecraft.text.Text;
 
 import com.dragonclient.util.TierTagManager;
 
 import com.dragonclient.cosmetics.CapeManager;
+import com.dragonclient.cosmetics.SkinManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(AbstractClientPlayerEntity.class)
-public class MixinAbstractClientPlayerEntity {
+public abstract class MixinAbstractClientPlayerEntity {
     
-    @Inject(method = "getSkinTextures", at = @At("RETURN"), cancellable = true, require = 0)
-    private void onGetSkinTextures(CallbackInfoReturnable<SkinTextures> cir) {
-        AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
-        if (MinecraftClient.getInstance() == null || player != MinecraftClient.getInstance().player) {
-            return;
+    @Shadow @Nullable
+    public abstract PlayerListEntry getPlayerListEntry();
+    
+    /**
+     * @author DragonClient
+     * @reason Custom skin and cape textures for all player rendering contexts
+     */
+    @Overwrite
+    public SkinTextures getSkinTextures() {
+        AbstractClientPlayerEntity player = (AbstractClientPlayerEntity)(Object)this;
+        boolean isLocalPlayer = MinecraftClient.getInstance() != null && player == MinecraftClient.getInstance().player;
+        String playerName = player.getName().getString();
+        
+        // Get vanilla skin textures as fallback
+        PlayerListEntry entry = getPlayerListEntry();
+        if (entry == null) {
+            // Return default Steve skin if no player list entry
+            Identifier defaultSkin = Identifier.of("minecraft", "textures/entity/player/wide/steve.png");
+            return new SkinTextures(defaultSkin, null, null, null, SkinTextures.Model.WIDE, false);
         }
+        
+        SkinTextures vanilla = entry.getSkinTextures();
+        
+        // Check for custom skin
+        Identifier customSkin = SkinManager.getInstance().getCustomSkin(playerName);
+        Identifier skinTexture = customSkin != null ? customSkin : vanilla.texture();
+        
+        // Check for custom cape
         CapeManager capeManager = CapeManager.getInstance();
-        if (capeManager.hasCapeEquipped()) {
+        Identifier capeTexture = vanilla.capeTexture();
+        if (isLocalPlayer && capeManager.hasCapeEquipped()) {
             Identifier customCape = capeManager.getCapeTexture();
             if (customCape != null) {
-                SkinTextures original = cir.getReturnValue();
-                SkinTextures modified = new SkinTextures(
-                    original.texture(),
-                    original.textureUrl(),
-                    customCape, // Custom cape texture
-                    original.elytraTexture(),
-                    original.model(),
-                    original.secure()
-                );
-                cir.setReturnValue(modified);
+                capeTexture = customCape;
             }
         }
+        
+        // Determine model (slim/wide)
+        SkinTextures.Model model = vanilla.model();
+        if (customSkin != null) {
+            // Use model from SkinManager if available
+            String skinModel = SkinManager.getInstance().getSkinModel(playerName);
+            model = "slim".equals(skinModel) ? SkinTextures.Model.SLIM : SkinTextures.Model.WIDE;
+        }
+        
+        return new SkinTextures(
+            skinTexture,
+            vanilla.textureUrl(),
+            capeTexture,
+            vanilla.elytraTexture(),
+            model,
+            vanilla.secure()
+        );
     }
 }

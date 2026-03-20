@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        minecraft: ['1.21.1', '1.21.3', '1.21.4', '1.21.6', '1.21.7', '1.21.8', '1.21.10', '1.21.11']
+        minecraft: ['1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.8', '1.21.9', '1.21.10', '1.21.11']
     
     steps:
       - uses: actions/checkout@v4
@@ -106,13 +106,13 @@ jobs:
                 "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.4-${{ needs.version.outputs.version }}.jar",
                 "sha256": "$(sha256sum artifacts/dragon-client-1.21.4/dragon-client-1.21.4-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
               },
-              "1.21.6": {
-                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.6-${{ needs.version.outputs.version }}.jar",
-                "sha256": "$(sha256sum artifacts/dragon-client-1.21.6/dragon-client-1.21.6-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              "1.21.5": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.5-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.5/dragon-client-1.21.5-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
               },
-              "1.21.7": {
-                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.7-${{ needs.version.outputs.version }}.jar",
-                "sha256": "$(sha256sum artifacts/dragon-client-1.21.7/dragon-client-1.21.7-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              "1.21.9": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.9-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.9/dragon-client-1.21.9-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
               },
               "1.21.8": {
                 "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.8-${{ needs.version.outputs.version }}.jar",
@@ -144,9 +144,9 @@ jobs:
             - Minecraft 1.21.1
             - Minecraft 1.21.3
             - Minecraft 1.21.4
-            - Minecraft 1.21.6
-            - Minecraft 1.21.7
+            - Minecraft 1.21.5
             - Minecraft 1.21.8
+            - Minecraft 1.21.9
             - Minecraft 1.21.10
             - Minecraft 1.21.11
             
@@ -156,9 +156,9 @@ jobs:
             artifacts/dragon-client-1.21.1/dragon-client-1.21.1-${{ needs.version.outputs.version }}.jar
             artifacts/dragon-client-1.21.3/dragon-client-1.21.3-${{ needs.version.outputs.version }}.jar
             artifacts/dragon-client-1.21.4/dragon-client-1.21.4-${{ needs.version.outputs.version }}.jar
-            artifacts/dragon-client-1.21.6/dragon-client-1.21.6-${{ needs.version.outputs.version }}.jar
-            artifacts/dragon-client-1.21.7/dragon-client-1.21.7-${{ needs.version.outputs.version }}.jar
+            artifacts/dragon-client-1.21.5/dragon-client-1.21.5-${{ needs.version.outputs.version }}.jar
             artifacts/dragon-client-1.21.8/dragon-client-1.21.8-${{ needs.version.outputs.version }}.jar
+            artifacts/dragon-client-1.21.9/dragon-client-1.21.9-${{ needs.version.outputs.version }}.jar
             artifacts/dragon-client-1.21.10/dragon-client-1.21.10-${{ needs.version.outputs.version }}.jar
             artifacts/dragon-client-1.21.11/dragon-client-1.21.11-${{ needs.version.outputs.version }}.jar
             artifacts/versions.json

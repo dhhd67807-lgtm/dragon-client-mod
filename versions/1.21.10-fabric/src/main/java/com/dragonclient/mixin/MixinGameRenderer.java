@@ -1,12 +1,14 @@
 package com.dragonclient.mixin;
 
 import com.dragonclient.module.visual.MotionBlurModule;
+import com.dragonclient.module.visual.OutlinesModule;
 import com.dragonclient.module.movement.FreelookModule;
 import com.dragonclient.module.visual.ZoomModule;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,6 +20,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MixinGameRenderer {
     private static float dragonclient$motionBlurStrength = 0.0f;
     private static float dragonclient$lastYaw = Float.NaN;
+    private static final Identifier DRAGONCLIENT_WORLD_OUTLINE = Identifier.of("dragonclient", "world_outline");
+
+    @Inject(method = "renderWorld", at = @At("HEAD"), require = 0)
+    private void dragonclient$forceWorldOutlinePostEffect(RenderTickCounter tickCounter, CallbackInfo ci) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.world == null) {
+            return;
+        }
+
+        MixinGameRendererPostEffectAccessor accessor = (MixinGameRendererPostEffectAccessor) (Object) this;
+        if (!OutlinesModule.enabled) {
+            accessor.dragonclient$setPostProcessorEnabled(false);
+            return;
+        }
+
+        accessor.dragonclient$setPostProcessorId(DRAGONCLIENT_WORLD_OUTLINE);
+        accessor.dragonclient$setPostProcessorEnabled(true);
+    }
 
     @Inject(method = "getFov", at = @At("RETURN"), cancellable = true, require = 0)
     private void dragonclient$applyZoomFov(Camera camera, float tickDelta, boolean changingFov, CallbackInfoReturnable<Float> cir) {

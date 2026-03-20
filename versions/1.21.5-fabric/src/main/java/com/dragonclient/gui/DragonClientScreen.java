@@ -39,7 +39,8 @@ public class DragonClientScreen extends Screen {
     
     public DragonClientScreen() {
         super(Text.literal("Dragon Client"));
-        this.modules = new ArrayList<>(DragonClientMod.getInstance().getModuleManager().getModules());    }
+        this.modules = new ArrayList<>(DragonClientMod.getInstance().getModuleManager().getModules());
+    }
 
     @Override
     protected void init() {
@@ -82,50 +83,57 @@ public class DragonClientScreen extends Screen {
         double targetScale = FIXED_GUI_SCALE;
         float scaleFactor = (float)(targetScale / currentScale);
         
+        // Transform mouse coordinates to our fixed scale space
         int transformedMouseX = (int)(mouseX / scaleFactor);
         int transformedMouseY = (int)(mouseY / scaleFactor);
         
+        // Calculate GUI dimensions at fixed scale
+        int fixedScaledWidth = (int)(this.width / scaleFactor);
+        int fixedScaledHeight = (int)(this.height / scaleFactor);
+        int fixedGuiLeft = (fixedScaledWidth - GUI_WIDTH) / 2;
+        int fixedGuiTop = (fixedScaledHeight - GUI_HEIGHT) / 2;
+        
         var matrices = context.getMatrices();
         matrices.push();
-        matrices.scale(scaleFactor, scaleFactor); // 2D scaling only in 1.21.11
+        matrices.scale(scaleFactor, scaleFactor, 1.0f); // 3D scaling for 1.21.1-1.21.10
         
         // Draw main GUI background with rounded corners (Smoky Black)
-        drawRoundedRect(context, guiLeft, guiTop, GUI_WIDTH, GUI_HEIGHT, 0xFF100C08);
+        drawRoundedRect(context, fixedGuiLeft, fixedGuiTop, GUI_WIDTH, GUI_HEIGHT, 0xFF100C08);
         
         // Draw border around the GUI
-        drawRoundedBorder(context, guiLeft, guiTop, GUI_WIDTH, GUI_HEIGHT, 0xFF2A2622);
+        drawRoundedBorder(context, fixedGuiLeft, fixedGuiTop, GUI_WIDTH, GUI_HEIGHT, 0xFF2A2622);
         
         // Draw top bar with subtle gradient (default style)
-        context.fill(guiLeft, guiTop, guiLeft + GUI_WIDTH, guiTop + 50, 0xFF1A1614);
-        context.fill(guiLeft, guiTop + 49, guiLeft + GUI_WIDTH, guiTop + 50, 0xFF252220);
+        context.fill(fixedGuiLeft, fixedGuiTop, fixedGuiLeft + GUI_WIDTH, fixedGuiTop + 50, 0xFF1A1614);
+        context.fill(fixedGuiLeft, fixedGuiTop + 49, fixedGuiLeft + GUI_WIDTH, fixedGuiTop + 50, 0xFF252220);
         
         // Draw "MODS" title with cs_star icon
         String title = "MODS";
         int titleWidth = this.textRenderer.getWidth(title);
         int starSize = 16;
         int totalWidth = starSize + 5 + titleWidth; // star + gap + text
-        int headerStartX = guiLeft + (GUI_WIDTH - totalWidth) / 2;
+        int headerStartX = fixedGuiLeft + (GUI_WIDTH - totalWidth) / 2;
         
         // Draw star icon before title (centered horizontally)
         int starX = headerStartX;
-        int starY = guiTop + 17;
+        int starY = fixedGuiTop + 17;
         
         // Draw star icon (blending automatic in 1.21.11)
         drawTexture(context, STAR_ICON, starX, starY, starSize, starSize);
         
-        // Draw title text after star
-        context.drawTextWithShadow(this.textRenderer, title, starX + starSize + 5, guiTop + 20, 0xFFFEFEFE);
+        // Draw title text after star with custom dragon font
+        context.drawTextWithShadow(this.textRenderer, title, starX + starSize + 5, fixedGuiTop + 20, 0xFFFEFEFE);
         
         // Draw close button (X) with hover effect
-        int closeX = guiLeft + GUI_WIDTH - 35;
-        int closeY = guiTop + 15;
+        int closeX = fixedGuiLeft + GUI_WIDTH - 35;
+        int closeY = fixedGuiTop + 15;
         boolean isCloseHovered = transformedMouseX >= closeX && transformedMouseX <= closeX + 25 && transformedMouseY >= closeY && transformedMouseY <= closeY + 25;
         drawRoundedButton(context, closeX, closeY, 25, 25, isCloseHovered ? 0xFFE63946 : 0xFF252220);
         context.drawCenteredTextWithShadow(this.textRenderer, "✕", closeX + 12, closeY + 9, 0xFFFEFEFE);
         
         // Draw category tabs with modern styling
-        int tabX = guiLeft + 15;
-        int tabY = guiTop + 65;
+        int tabX = fixedGuiLeft + 15;
+        int tabY = fixedGuiTop + 65;
         int tabIndex = 0;
         int tabWidth = 90; // Increased from 70
         int tabSpacing = 95; // Increased spacing between tabs
@@ -166,27 +174,50 @@ public class DragonClientScreen extends Screen {
         }
         
         // Enable scissor (clipping) to keep cards within GUI bounds
-        // In 1.21.11, enableScissor uses logical scaled GUI coordinates (not framebuffer coordinates)
-        int scissorMinX = guiLeft;
-        int scissorMinY = guiTop + 105;
-        int scissorMaxX = guiLeft + GUI_WIDTH;
-        int scissorMaxY = guiTop + GUI_HEIGHT;
-        context.enableScissor(scissorMinX, scissorMinY, scissorMaxX, scissorMaxY);
+        // Scissor needs to be in framebuffer coordinates, not scaled coordinates
+        int framebufferWidth = client.getWindow().getFramebufferWidth();
+        int framebufferHeight = client.getWindow().getFramebufferHeight();
+        
+        // Calculate scissor bounds in framebuffer space
+        int scissorX = (int)((fixedGuiLeft) * scaleFactor * currentScale);
+        int scissorY = (int)((fixedGuiTop + 105) * scaleFactor * currentScale);
+        int scissorWidth = (int)(GUI_WIDTH * scaleFactor * currentScale);
+        int scissorHeight = (int)((GUI_HEIGHT - 105) * scaleFactor * currentScale);
+        
+        // Flip Y coordinate for OpenGL (origin at bottom-left)
+        int flippedY = framebufferHeight - scissorY - scissorHeight;
+        
+        System.out.println("[DragonClient] Scissor: x=" + scissorX + " y=" + flippedY + " w=" + scissorWidth + " h=" + scissorHeight);
+        
+        // Use GL scissor directly
+        com.mojang.blaze3d.systems.RenderSystem.enableScissor(scissorX, flippedY, scissorWidth, scissorHeight);
         
         // Draw module cards with scrolling support
-        int startX = guiLeft + 20;
-        int startY = guiTop + 110 - (int)scrollOffset;
+        int startX = fixedGuiLeft + 20;
+        int startY = fixedGuiTop + 110 - (int)scrollOffset;
         int cardIndex = 0;
+        
+        System.out.println("[DragonClient] Rendering cards for category: " + selectedCategory + ", total modules: " + modules.size());
+        System.out.println("[DragonClient] GUI position: fixedGuiLeft=" + fixedGuiLeft + " fixedGuiTop=" + fixedGuiTop);
+        System.out.println("[DragonClient] Scale: currentScale=" + currentScale + " targetScale=" + targetScale + " scaleFactor=" + scaleFactor);
+        System.out.println("[DragonClient] Transformed mouse: " + transformedMouseX + "," + transformedMouseY);
         
         for (Module module : modules) {
             if (module.getCategory() == selectedCategory) {
+                System.out.println("[DragonClient] Found module: " + module.getName() + " in category " + selectedCategory);
                 int row = cardIndex / CARDS_PER_ROW;
                 int col = cardIndex % CARDS_PER_ROW;
                 int cardX = startX + (col * (CARD_WIDTH + CARD_SPACING));
                 int cardY = startY + (row * (CARD_HEIGHT + CARD_SPACING));
                 
+                System.out.println("[DragonClient] Card " + cardIndex + ": " + module.getName() + 
+                                 " at x=" + cardX + " y=" + cardY + " (row=" + row + " col=" + col + ")");
+                System.out.println("[DragonClient]   Visible range: y > " + (fixedGuiTop + 105) + " && y < " + (fixedGuiTop + GUI_HEIGHT));
+                System.out.println("[DragonClient]   Card bounds: " + cardY + " to " + (cardY + CARD_HEIGHT));
+                
                 // Only render if card is within bounds
-                if (cardY + CARD_HEIGHT > guiTop + 105 && cardY < guiTop + GUI_HEIGHT) {
+                if (cardY + CARD_HEIGHT > fixedGuiTop + 105 && cardY < fixedGuiTop + GUI_HEIGHT) {
+                    System.out.println("[DragonClient]   RENDERING card " + cardIndex);
                     // Check if card is hovered
                     boolean isCardHovered = transformedMouseX >= cardX && transformedMouseX <= cardX + CARD_WIDTH &&
                                            transformedMouseY >= cardY && transformedMouseY <= cardY + CARD_HEIGHT;
@@ -249,25 +280,26 @@ public class DragonClientScreen extends Screen {
         }
         
         // Disable scissor (clipping)
-        context.disableScissor();
+        com.mojang.blaze3d.systems.RenderSystem.disableScissor();
         
         matrices.pop();
     }
     
     // -------------------------------------------------------------------------
-    // Texture helper — 1.21.11: Use RenderPipelines.GUI_TEXTURED
+    // Texture helper — 1.21.3-1.21.4: Use RenderLayer::getGuiTextured
     // -------------------------------------------------------------------------
     private void drawTexture(DrawContext context, Identifier texture,
                             int x, int y, int width, int height) {
-        // 1.21.11: Use RenderPipelines.GUI_TEXTURED for GUI texture rendering
-        context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, 
-                          texture, x, y, 0f, 0f, width, height, width, height);
+        // 1.21.3-1.21.4: Use RenderLayer::getGuiTextured with int parameters
+        context.drawTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, 
+                          texture, x, y, 0, 0, width, height, width, height);
     }
     
-    // Texture helper with color/opacity for 1.21.11
+    // Texture helper with color/opacity for 1.21.3-1.21.4
     private void drawTextureWithColor(DrawContext context, Identifier texture, int x, int y, int width, int height, int color) {
-        context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, 
-                          texture, x, y, 0f, 0f, width, height, width, height, color);
+        // Note: This signature doesn't support color parameter directly in 1.21.3-1.21.4
+        context.drawTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, 
+                          texture, x, y, 0, 0, width, height, width, height);
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -279,17 +311,23 @@ public class DragonClientScreen extends Screen {
         int mx = (int)(mouseX / scaleFactor);
         int my = (int)(mouseY / scaleFactor);
         
+        // Calculate GUI dimensions at fixed scale
+        int fixedScaledWidth = (int)(this.width / scaleFactor);
+        int fixedScaledHeight = (int)(this.height / scaleFactor);
+        int fixedGuiLeft = (fixedScaledWidth - GUI_WIDTH) / 2;
+        int fixedGuiTop = (fixedScaledHeight - GUI_HEIGHT) / 2;
+        
         // Check close button
-        int closeX = guiLeft + GUI_WIDTH - 35;
-        int closeY = guiTop + 10;
+        int closeX = fixedGuiLeft + GUI_WIDTH - 35;
+        int closeY = fixedGuiTop + 10;
         if (mx >= closeX && mx <= closeX + 25 && my >= closeY && my <= closeY + 25) {
             this.close();
             return true;
         }
         
         // Check category tab clicks
-        int tabX = guiLeft + 15;
-        int tabY = guiTop + 65;
+        int tabX = fixedGuiLeft + 15;
+        int tabY = fixedGuiTop + 65;
         int tabIndex = 0;
         int tabWidth = 90;
         int tabSpacing = 95;
@@ -304,8 +342,8 @@ public class DragonClientScreen extends Screen {
         }
         
         // Check module card clicks
-        int startX = guiLeft + 20;
-        int startY = guiTop + 110 - (int)scrollOffset;
+        int startX = fixedGuiLeft + 20;
+        int startY = fixedGuiTop + 110 - (int)scrollOffset;
         int cardIndex = 0;
         
         for (Module module : modules) {

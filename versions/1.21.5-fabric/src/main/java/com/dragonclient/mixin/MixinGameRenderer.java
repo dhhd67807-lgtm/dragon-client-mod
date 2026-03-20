@@ -56,15 +56,20 @@ public class MixinGameRenderer {
         dragonclient$lastYaw = yaw;
 
         float intensity = MathHelper.clamp(MotionBlurModule.blurAmount, 0.0f, 2.0f);
-        float speedFactor = Math.min(1.0f, speed * 3.0f);
-        float turnFactor = Math.min(1.0f, yawDelta / 12.0f);
-        float targetStrength = (speedFactor * 0.8f + turnFactor * 0.7f) * (0.35f + intensity * 0.30f);
+        float speedFactor = Math.min(1.0f, speed * 1.4f);
+        float turnFactor = Math.min(1.0f, yawDelta / 18.0f);
+
+        // Prioritize turning. Walking alone should not create full-screen blur.
+        float targetStrength = (turnFactor * 0.92f + speedFactor * 0.08f) * (0.20f + intensity * 0.14f);
+        if (turnFactor < 0.05f) {
+            targetStrength *= 0.35f;
+        }
         targetStrength = MathHelper.clamp(targetStrength, 0.0f, 1.0f);
 
-        float smoothing = 0.22f + (0.18f * Math.min(1.0f, intensity));
+        float smoothing = 0.16f + (0.10f * Math.min(1.0f, intensity));
         dragonclient$motionBlurStrength += (targetStrength - dragonclient$motionBlurStrength) * smoothing;
 
-        if (dragonclient$motionBlurStrength < 0.12f) {
+        if (dragonclient$motionBlurStrength < 0.24f) {
             return;
         }
 

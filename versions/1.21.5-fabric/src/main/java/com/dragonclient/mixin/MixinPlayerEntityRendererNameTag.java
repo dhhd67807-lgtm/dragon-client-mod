@@ -31,10 +31,10 @@ public class MixinPlayerEntityRendererNameTag {
         Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final float DRAGONCLIENT_NAME_TAG_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 6.0f;
-    private static final float DRAGONCLIENT_NAME_TAG_ICON_GAP = 0.5f;
+    private static final int DRAGONCLIENT_STAR_PADDING_SPACES = 2;
     private static final float DRAGONCLIENT_TIER_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_TIER_ICON_HEIGHT = 6.0f;
-    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.5f;
+    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.25f;
 
     private boolean dragonclient$shouldForceNameTag(Entity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -60,6 +60,10 @@ public class MixinPlayerEntityRendererNameTag {
         return client != null && client.player != null && state.id == client.player.getId();
     }
 
+    private Text dragonclient$withStarPadding(Text name) {
+        return Text.literal(" ".repeat(DRAGONCLIENT_STAR_PADDING_SPACES)).append(name.copy());
+    }
+
     @Inject(
         method = "updateRenderState(Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;F)V",
         at = @At("TAIL"),
@@ -82,7 +86,7 @@ public class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        state.displayName = decoratedName;
+        state.displayName = TierTagManager.decorateName(dragonclient$withStarPadding(baseName), entity.getName().getString());
         state.nameLabelPos = new Vec3d(0.0, entity.getHeight() + 0.2, 0.0);
         state.playerName = null;
     }
@@ -114,15 +118,22 @@ public class MixinPlayerEntityRendererNameTag {
         float nameOnlyWidth = client.textRenderer.getWidth(client.player.getName());
         float textLeft = -fullWidth / 2.0f;
         float nameLeft = textLeft + (fullWidth - nameOnlyWidth);
-        float iconLeft = nameLeft - DRAGONCLIENT_NAME_TAG_ICON_GAP - DRAGONCLIENT_NAME_TAG_ICON_WIDTH;
+        float reservedWidth = client.textRenderer.getWidth(" ") * DRAGONCLIENT_STAR_PADDING_SPACES;
+        float tierEnd = nameLeft - reservedWidth;
+        float iconLeft = tierEnd + ((reservedWidth - DRAGONCLIENT_NAME_TAG_ICON_WIDTH) * 0.5f);
         float tierIconLeft = textLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
         float iconTop = 1.0f;
         int litLight = LightmapTextureManager.applyEmission(light, 2);
-        matrices.push();
-        matrices.translate(state.nameLabelPos.x, state.nameLabelPos.y + 0.5, state.nameLabelPos.z);
-        matrices.multiply(client.getEntityRenderDispatcher().getRotation());
-        matrices.scale(0.025f, -0.025f, 0.025f);
+        boolean pushedTransform = false;
         MatrixStack.Entry entry = matrices.peek();
+        if (!dragonclient$isLabelSpace(entry)) {
+            matrices.push();
+            matrices.translate(state.nameLabelPos.x, state.nameLabelPos.y + 0.5, state.nameLabelPos.z);
+            matrices.multiply(client.getEntityRenderDispatcher().getRotation());
+            matrices.scale(0.025f, -0.025f, 0.025f);
+            entry = matrices.peek();
+            pushedTransform = true;
+        }
 
         if (tier != null && !tier.isBlank()) {
             Identifier tierIcon = Identifier.of("dragonclient", "textures/tier_tags/" + tier.toLowerCase(Locale.ROOT) + ".png");
@@ -174,7 +185,16 @@ public class MixinPlayerEntityRendererNameTag {
             litLight,
             0xFFFFFFFF
         );
-        matrices.pop();
+
+        if (pushedTransform) {
+            matrices.pop();
+        }
+    }
+
+    private static boolean dragonclient$isLabelSpace(MatrixStack.Entry entry) {
+        var matrix = entry.getPositionMatrix();
+        float sx = (float)Math.sqrt(matrix.m00() * matrix.m00() + matrix.m01() * matrix.m01() + matrix.m02() * matrix.m02());
+        return sx < 0.1f;
     }
 
     private static void dragonclient$drawIcon(

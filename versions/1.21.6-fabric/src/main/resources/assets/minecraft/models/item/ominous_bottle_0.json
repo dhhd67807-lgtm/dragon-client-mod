@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/ominous_bottle",
+  "textures": {
+    "layer0": "minecraft:item/ominous_bottle_0"
+  }
+}

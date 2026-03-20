@@ -1,6 +1,7 @@
 package com.dragonclient;
 
 import com.dragonclient.cosmetics.CapeManager;
+import com.dragonclient.cosmetics.GearSkinManager;
 import com.dragonclient.gui.hud.HudRenderer;
 import com.dragonclient.module.movement.FreelookModule;
 import net.fabricmc.api.ClientModInitializer;
@@ -43,6 +44,7 @@ public class DragonClientClient implements ClientModInitializer {
         ));
 
         hudRenderer = new HudRenderer();
+        GearSkinManager.load();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (FreelookModule.isFreelooking) {

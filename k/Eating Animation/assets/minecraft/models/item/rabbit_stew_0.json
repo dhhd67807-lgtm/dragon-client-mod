@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/rabbit_stew",
+  "textures": {
+    "layer0": "minecraft:item/rabbit_stew_0"
+  }
+}

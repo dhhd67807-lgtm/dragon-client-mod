@@ -64,9 +64,9 @@ public abstract class MixinMouse {
             }
             
             // Handle HudEditorScreen and DragonClientScreen
-            if (!screenName.equals("HudEditorScreen") && !screenName.equals("DragonClientScreen")) {
+            if (!screenName.equals("HudEditorScreen") && !screenName.equals("DragonClientScreen") && !screenName.equals("DragonSkinsScreen")) {
                 if (mouseLog != null) {
-                    mouseLog.println("  SKIP: Not HudEditorScreen or DragonClientScreen");
+                    mouseLog.println("  SKIP: Not HudEditorScreen, DragonClientScreen or DragonSkinsScreen");
                     mouseLog.flush();
                 }
                 return;
@@ -142,6 +142,60 @@ public abstract class MixinMouse {
             }
             System.err.println("[DragonClient] Error in MixinMouse: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+    
+    // Handle mouse scroll for HUD editor scaling
+    @Inject(method = "onMouseScroll", at = @At("HEAD"))
+    private void onMouseScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
+        try {
+            MinecraftClient client = MinecraftClient.getInstance();
+            
+            if (client == null || client.currentScreen == null) {
+                return;
+            }
+            
+            Screen screen = client.currentScreen;
+            String screenName = screen.getClass().getSimpleName();
+            
+            // Only handle HudEditorScreen, DragonClientScreen and DragonSkinsScreen
+            if (!screenName.equals("HudEditorScreen") && !screenName.equals("DragonClientScreen") && !screenName.equals("DragonSkinsScreen")) {
+                return;
+            }
+            
+            // Calculate scaled mouse coordinates
+            double mouseX = this.x * (double)client.getWindow().getScaledWidth() / (double)client.getWindow().getWidth();
+            double mouseY = this.y * (double)client.getWindow().getScaledHeight() / (double)client.getWindow().getHeight();
+            
+            if (mouseLog != null) {
+                mouseLog.println("\n=== onMouseScroll called ===");
+                mouseLog.println("  Screen: " + screenName);
+                mouseLog.println("  horizontal=" + horizontal + " vertical=" + vertical);
+                mouseLog.println("  mouseX=" + mouseX + " mouseY=" + mouseY);
+            }
+            
+            // Call mouseScrolled via reflection
+            try {
+                java.lang.reflect.Method method = screen.getClass().getMethod("mouseScrolled", 
+                    double.class, double.class, double.class, double.class);
+                boolean handled = (boolean) method.invoke(screen, mouseX, mouseY, horizontal, vertical);
+                if (mouseLog != null) {
+                    mouseLog.println("  mouseScrolled returned: " + handled);
+                    mouseLog.flush();
+                }
+            } catch (Exception e) {
+                if (mouseLog != null) {
+                    mouseLog.println("  Error calling mouseScrolled: " + e.getMessage());
+                    e.printStackTrace(mouseLog);
+                    mouseLog.flush();
+                }
+            }
+        } catch (Exception e) {
+            if (mouseLog != null) {
+                mouseLog.println("  ERROR in onMouseScroll: " + e.getMessage());
+                e.printStackTrace(mouseLog);
+                mouseLog.flush();
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ import com.dragonclient.core.ModuleManager;
 import com.dragonclient.core.EventBus;
 import com.dragonclient.core.ConfigManager;
 import com.dragonclient.core.CommandManager;
+import com.dragonclient.gui.hud.HudRenderer;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ public class DragonClientMod implements ModInitializer {
     private EventBus eventBus;
     private ConfigManager configManager;
     private CommandManager commandManager;
+    private HudRenderer hudRenderer;
 
     @Override
     public void onInitialize() {
@@ -30,6 +32,7 @@ public class DragonClientMod implements ModInitializer {
         configManager = new ConfigManager();
         moduleManager = new ModuleManager();
         commandManager = new CommandManager();
+        hudRenderer = new HudRenderer();
 
         // Load configuration
         configManager.loadConfig();
@@ -55,5 +58,9 @@ public class DragonClientMod implements ModInitializer {
 
     public CommandManager getCommandManager() {
         return commandManager;
+    }
+
+    public HudRenderer getHudRenderer() {
+        return hudRenderer;
     }
 }

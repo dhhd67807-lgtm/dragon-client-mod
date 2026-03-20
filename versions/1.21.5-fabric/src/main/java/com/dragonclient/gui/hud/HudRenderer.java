@@ -39,8 +39,21 @@ public class HudRenderer {
             int enabledCount = 0;
             for (Module module : DragonClientMod.getInstance().getModuleManager().getEnabledModules()) {
                 if (module instanceof HudModule) {
+                    HudModule hudModule = (HudModule) module;
                     enabledCount++;
-                    ((HudModule) module).render(context, tickDelta);
+                    
+                    // Apply module-specific scaling
+                    var matrices = context.getMatrices();
+                    matrices.push();
+                    
+                    float moduleScale = hudModule.getScale() / 4.0f; // Normalize to base scale (4.0)
+                    matrices.translate((float)hudModule.getX(), (float)hudModule.getY(), 0f);
+                    matrices.scale(moduleScale, moduleScale, 1.0f);
+                    matrices.translate((float)-hudModule.getX(), (float)-hudModule.getY(), 0f);
+                    
+                    hudModule.render(context, tickDelta);
+                    
+                    matrices.pop();
                 }
             }
             

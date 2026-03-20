@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "MixinGameRenderer",
+    "MixinGameRendererPostEffectAccessor",
     "MixinKeyboardZoom",
     "MixinEntityFreelook",
     "MixinCameraFreelook",
@@ -12,6 +13,7 @@
     "MixinPlayerEntity",
     "MixinClientPlayerEntity",
     "MixinMouseHandler",
+    "MixinItemModelManagerGearSkins",
     "MixinChatScreen",
     "MixinGameOptions",
     "MixinAbstractClientPlayerEntity",

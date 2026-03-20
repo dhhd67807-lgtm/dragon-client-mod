@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/pufferfish",
+  "textures": {
+    "layer0": "minecraft:item/pufferfish_1"
+  }
+}

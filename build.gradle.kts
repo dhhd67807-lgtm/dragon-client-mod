@@ -25,8 +25,7 @@ dependencies {
         "1.21.1-fabric" to "maven.modrinth:continuity:3.0.0+1.21",
         "1.21.3-fabric" to "maven.modrinth:continuity:3.0.0+1.21.3",
         "1.21.4-fabric" to "maven.modrinth:continuity:3.0.0+1.21.4",
-        "1.21.6-fabric" to "maven.modrinth:continuity:3.0.1-beta.1+1.21.6",
-        "1.21.7-fabric" to "maven.modrinth:continuity:3.0.1-beta.1+1.21.6",
+        "1.21.5-fabric" to "maven.modrinth:continuity:3.0.1-test.4+1.21.5",
         "1.21.8-fabric" to "maven.modrinth:continuity:3.0.1-beta.1+1.21.6",
         "1.21.10-fabric" to "maven.modrinth:continuity:3.0.1-beta.2+1.21.10"
     )
@@ -34,7 +33,7 @@ dependencies {
         modImplementation(continuity)
         include(continuity)
     }
-    
+
     // Mixin Extras for @Local annotation support
     implementation("io.github.llamalad7:mixinextras-fabric:0.4.1")
     annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.4.1")

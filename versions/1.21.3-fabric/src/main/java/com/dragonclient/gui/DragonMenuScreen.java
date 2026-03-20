@@ -12,13 +12,14 @@ import org.slf4j.LoggerFactory;
 public class DragonMenuScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger("DragonClient");
     private static final int MENU_WIDTH = 200;
-    private static final int MENU_HEIGHT = 240;
+    private static final int MENU_HEIGHT = 280;
     private static final int FIXED_GUI_SCALE = 2;
     
     private static final Identifier DRAGON_LOGO    = Identifier.of("dragonclient", "textures/gui/new-dragon.png");
     private static final Identifier HEADER_TEXTURE = Identifier.of("dragonclient", "textures/gui/header-menu.png");
     private static final Identifier CS_STAR_ICON   = Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final Identifier ULTRA_ICON     = Identifier.of("dragonclient", "textures/gui/ultra.png");
+    private static final Identifier SKINS_ICON     = Identifier.of("dragonclient", "textures/gui/2.png");
     
     private int guiLeft;
     private int guiTop;
@@ -61,6 +62,7 @@ public class DragonMenuScreen extends Screen {
         int realButtonWidth = Math.round(buttonWidth * scaleFactor);
         int realButtonHeight = Math.round(buttonHeight * scaleFactor);
         int realSecondButtonY = Math.round((startY + buttonSpacing) * scaleFactor);
+        int realThirdButtonY = Math.round((startY + (buttonSpacing * 2)) * scaleFactor);
         
         // Invisible (zero-alpha) ButtonWidgets — they own all click/focus logic.
         // We draw our own styled backgrounds in render(); no vanilla button chrome needed.
@@ -73,6 +75,11 @@ public class DragonMenuScreen extends Screen {
             .dimensions(realButtonX, realSecondButtonY, realButtonWidth, realButtonHeight)
             .build());
         
+        this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
+            MinecraftClient.getInstance().setScreen(new DragonSkinsScreen()))
+            .dimensions(realButtonX, realThirdButtonY, realButtonWidth, realButtonHeight)
+            .build());
+
         // Hide vanilla rendering — we paint everything ourselves
         this.children().forEach(child -> {
             if (child instanceof ButtonWidget btn) btn.setAlpha(0f);
@@ -124,7 +131,7 @@ public class DragonMenuScreen extends Screen {
         int startY        = guiTop  + 120;
         int buttonSpacing = 40;
         
-        String[] labels    = {"MODS", "HUD"};
+        String[] labels    = {"MODS", "HUD", "SKINS"};
         
         for (int i = 0; i < labels.length; i++) {
             int     by        = startY + (i * buttonSpacing);
@@ -148,9 +155,12 @@ public class DragonMenuScreen extends Screen {
             if (i == 0) {
                 // MODS - cs_star icon (no hue)
                 drawTexture(context, CS_STAR_ICON, cx, starY, iconSize, iconSize);
-            } else {
+            } else if (i == 1) {
                 // HUD - ultra icon (no hue)
                 drawTexture(context, ULTRA_ICON, cx, starY, iconSize, iconSize);
+            } else {
+                // SKINS - visual icon
+                drawTexture(context, SKINS_ICON, cx, starY, iconSize, iconSize);
             }
             
             int textX     = cx + iconSize + 5;
@@ -214,7 +224,7 @@ public class DragonMenuScreen extends Screen {
         int startY        = guiTop + 120;
         int buttonSpacing = 40;
         
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             int by = startY + (i * buttonSpacing);
             if (transformedMouseX >= buttonX && transformedMouseX <= buttonX + buttonWidth &&
                 transformedMouseY >= by && transformedMouseY <= by + buttonHeight) {
@@ -222,6 +232,8 @@ public class DragonMenuScreen extends Screen {
                     MinecraftClient.getInstance().setScreen(new DragonClientScreen());
                 } else if (i == 1) {
                     MinecraftClient.getInstance().setScreen(new HudEditorScreen());
+                } else if (i == 2) {
+                    MinecraftClient.getInstance().setScreen(new DragonSkinsScreen());
                 }
                 return true;
             }

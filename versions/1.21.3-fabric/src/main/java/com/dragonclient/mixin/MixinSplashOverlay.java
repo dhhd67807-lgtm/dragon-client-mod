@@ -2,10 +2,10 @@ package com.dragonclient.mixin;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.SplashOverlay;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,7 +31,7 @@ public class MixinSplashOverlay {
     private static Identifier LOGO;
 
     @Inject(method = "init", at = @At("TAIL"), require = 0)
-    private static void dragonclient$registerSplashLogo(TextureManager textureManager, CallbackInfo ci) {
+    private static void dragonclient$registerSplashLogo(MinecraftClient client, CallbackInfo ci) {
         try (InputStream stream = MixinSplashOverlay.class.getResourceAsStream(
             "/assets/dragonclient/textures/gui/title/splash-transparent.png")) {
             if (stream == null) {
@@ -40,7 +40,7 @@ public class MixinSplashOverlay {
 
             NativeImage image = NativeImage.read(stream);
             NativeImageBackedTexture texture = new NativeImageBackedTexture(image);
-            textureManager.registerTexture(LOGO, texture);
+            client.getTextureManager().registerTexture(LOGO, texture);
         } catch (Exception ignored) {
         }
     }

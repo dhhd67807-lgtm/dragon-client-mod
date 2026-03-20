@@ -78,14 +78,14 @@ public abstract class HudModule extends Module {
     protected void applyScale(DrawContext context) {
         float currentScale = getScale();
         var matrices = context.getMatrices();
-        matrices.pushMatrix();
-        matrices.translate(x, y);
-        matrices.scale(currentScale, currentScale);
-        matrices.translate(-x, -y);
+        matrices.push();
+        matrices.translate((float)x, (float)y, 0f);
+        matrices.scale(currentScale, currentScale, 1.0f);
+        matrices.translate((float)-x, (float)-y, 0f);
     }
     
     // Helper method to remove scaling transformation
     protected void removeScale(DrawContext context) {
-        context.getMatrices().popMatrix();
+        context.getMatrices().pop();
     }
 }

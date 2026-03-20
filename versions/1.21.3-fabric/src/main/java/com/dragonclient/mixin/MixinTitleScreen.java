@@ -28,37 +28,12 @@ public class MixinTitleScreen {
         require = 0
     )
     private void dragonclient$hideVanillaTitleLogo(LogoDrawer drawer, DrawContext context, int screenWidth, float alpha) {
-        // Hide vanilla Minecraft logo/edition. We render our custom trapcode logo below.
+        // Hide vanilla title logo.
     }
 
     @Inject(method = "render", at = @At("TAIL"), require = 0)
     private void dragonclient$renderTrapcodeLogo(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        int screenWidth = context.getScaledWindowWidth();
-        MinecraftClient client = MinecraftClient.getInstance();
-        int screenHeight = client != null && client.currentScreen != null
-            ? client.currentScreen.height
-            : context.getScaledWindowHeight();
-
-        float baseHeight = (float) Math.min(screenWidth * 0.14f, screenHeight * 0.13f);
-        int logoHeight = Math.max(72, Math.round(baseHeight));
-        int logoWidth = Math.max(88, Math.round(logoHeight * DRAGONCLIENT_TRAPCODE_ASPECT));
-
-        int x = (screenWidth - logoWidth) / 2;
-        int firstButtonY = (screenHeight / 4) + 48;
-        int y = Math.max(10, firstButtonY - logoHeight - 10);
-
-        context.drawTexture(
-            net.minecraft.client.render.RenderLayer::getGuiTextured,
-            DRAGONCLIENT_TRAPCODE_LOGO,
-            x,
-            y,
-            0.0f,
-            0.0f,
-            logoWidth,
-            logoHeight,
-            logoWidth,
-            logoHeight
-        );
+        // Custom title logo disabled (panorama + buttons only).
     }
 
     @Redirect(

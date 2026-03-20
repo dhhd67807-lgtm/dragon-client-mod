@@ -64,9 +64,9 @@ public abstract class MixinMouse {
             }
             
             // Handle HudEditorScreen and DragonClientScreen
-            if (!screenName.equals("HudEditorScreen") && !screenName.equals("DragonClientScreen")) {
+            if (!screenName.equals("HudEditorScreen") && !screenName.equals("DragonClientScreen") && !screenName.equals("DragonSkinsScreen")) {
                 if (mouseLog != null) {
-                    mouseLog.println("  SKIP: Not HudEditorScreen or DragonClientScreen");
+                    mouseLog.println("  SKIP: Not HudEditorScreen, DragonClientScreen or DragonSkinsScreen");
                     mouseLog.flush();
                 }
                 return;

@@ -27,7 +27,7 @@ dependencies {
     val continuity = "maven.modrinth:continuity:3.0.1-beta.1+1.21.11"
     modImplementation(continuity)
     include(continuity)
-    
+
     // Mixin Extras for @Local annotation support
     implementation("io.github.llamalad7:mixinextras-fabric:0.4.1")
     annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.4.1")

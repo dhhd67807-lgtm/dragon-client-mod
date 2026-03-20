@@ -1,0 +1,41 @@
+{
+    "targets": [
+        "swap"
+    ],
+    "passes": [
+        {
+            "name": "dragonclient_world_outline",
+            "intarget": "minecraft:main",
+            "outtarget": "swap",
+            "auxtargets": [
+                {
+                    "name": "MainDepthSampler",
+                    "id": "minecraft:main:depth"
+                }
+            ],
+            "uniforms": [
+                {
+                    "name": "DepthSensitivity",
+                    "values": [ 6.9 ]
+                },
+                {
+                    "name": "ColorSensitivity",
+                    "values": [ 1.1 ]
+                },
+                {
+                    "name": "Thickness",
+                    "values": [ 1.05 ]
+                },
+                {
+                    "name": "Darkness",
+                    "values": [ 0.44 ]
+                }
+            ]
+        },
+        {
+            "name": "blit",
+            "intarget": "swap",
+            "outtarget": "minecraft:main"
+        }
+    ]
+}

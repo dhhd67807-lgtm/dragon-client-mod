@@ -16,6 +16,19 @@ public class DummyPlayerEntity extends OtherClientPlayerEntity {
     private static final Identifier MANNEQUIN_SKIN = Identifier.of("dragonclient", "textures/mannequin.png");
     private Identifier customCapeTexture = null;
     
+    // Store previous positions manually for 1.21.6+
+    private double lastX = 0;
+    private double lastY = 0;
+    private double lastZ = 0;
+    
+    // Store cape positions manually for 1.21.6+
+    private double capeXPos = 0;
+    private double capeYPos = 0;
+    private double capeZPos = 0;
+    private double prevCapeXPos = 0;
+    private double prevCapeYPos = 0;
+    private double prevCapeZPos = 0;
+    
     public DummyPlayerEntity(ClientWorld world, GameProfile profile) {
         super(world, profile);
         // Enable cape rendering
@@ -24,24 +37,18 @@ public class DummyPlayerEntity extends OtherClientPlayerEntity {
         // Initialize entity state for proper cape physics
         this.setOnGround(true);
         this.setVelocity(Vec3d.ZERO);
-        this.prevX = 0;
-        this.prevY = 0;
-        this.prevZ = 0;
         
-        // Initialize cape position to hang down naturally
-        this.capeX = 0;
-        this.capeY = 0;
-        this.capeZ = 0;
-        this.prevCapeX = 0;
-        this.prevCapeY = 0;
-        this.prevCapeZ = 0;
+        // Store initial position
+        this.lastX = this.getX();
+        this.lastY = this.getY();
+        this.lastZ = this.getZ();
         
-        // Keep hands completely still
+        // Keep hands completely still - 1.21.3+ requires 3 parameters
         this.handSwingProgress = 0;
         this.lastHandSwingProgress = 0;
         this.handSwinging = false;
         this.limbAnimator.setSpeed(0);
-        this.limbAnimator.updateLimbs(0, 0);
+        this.limbAnimator.updateLimbs(0, 0, 0);
     }
     
     public void setCustomCape(Identifier capeTexture) {
@@ -50,29 +57,34 @@ public class DummyPlayerEntity extends OtherClientPlayerEntity {
     
     public void updateCapePhysics() {
         // Update cape physics to make it hang naturally
-        this.prevCapeX = this.capeX;
-        this.prevCapeY = this.capeY;
-        this.prevCapeZ = this.capeZ;
+        this.prevCapeXPos = this.capeXPos;
+        this.prevCapeYPos = this.capeYPos;
+        this.prevCapeZPos = this.capeZPos;
         
-        double deltaX = this.getX() - this.prevX;
-        double deltaZ = this.getZ() - this.prevZ;
-        double deltaY = this.getY() - this.prevY;
+        double deltaX = this.getX() - this.lastX;
+        double deltaZ = this.getZ() - this.lastZ;
+        double deltaY = this.getY() - this.lastY;
         
         double motion = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
         double targetCapeX = deltaX * 10.0;
         double targetCapeZ = deltaZ * 10.0;
         
         // Make cape hang down when stationary
-        this.capeX += (targetCapeX - this.capeX) * 0.1;
-        this.capeY += (deltaY * 10.0 - this.capeY) * 0.1;
-        this.capeZ += (targetCapeZ - this.capeZ) * 0.1;
+        this.capeXPos += (targetCapeX - this.capeXPos) * 0.1;
+        this.capeYPos += (deltaY * 10.0 - this.capeYPos) * 0.1;
+        this.capeZPos += (targetCapeZ - this.capeZPos) * 0.1;
         
-        // Force hands to stay still
+        // Update last position
+        this.lastX = this.getX();
+        this.lastY = this.getY();
+        this.lastZ = this.getZ();
+        
+        // Force hands to stay still - 1.21.3+ requires 3 parameters
         this.handSwingProgress = 0;
         this.lastHandSwingProgress = 0;
         this.handSwinging = false;
         this.limbAnimator.setSpeed(0);
-        this.limbAnimator.updateLimbs(0, 0);
+        this.limbAnimator.updateLimbs(0, 0, 0);
     }
     
     @Override
