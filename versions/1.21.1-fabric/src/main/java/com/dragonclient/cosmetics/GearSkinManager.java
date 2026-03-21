@@ -74,17 +74,20 @@ public final class GearSkinManager {
             new SkinOption("Red Lightning", Items.BARRIER),
             new SkinOption("Great Sword", Items.STRUCTURE_BLOCK),
             new SkinOption("Winged Scythe", Items.STRUCTURE_VOID),
-            new SkinOption("Heartflame Sword", Items.DEBUG_STICK)
+            new SkinOption("Heartflame Sword", Items.DEBUG_STICK),
+            new SkinOption("Void Colossus Broadsword", Items.LIGHT)
         });
 
         OPTIONS.put(Category.PICKAXE, new SkinOption[] {
             new SkinOption("Ice Axe", Items.JIGSAW),
-            new SkinOption("Heartflame Pickaxe", Items.KNOWLEDGE_BOOK)
+            new SkinOption("Heartflame Pickaxe", Items.KNOWLEDGE_BOOK),
+            new SkinOption("Void Colossus Pickaxe", Items.BUNDLE)
         });
 
         OPTIONS.put(Category.AXE, new SkinOption[] {
             new SkinOption("Ice Axe", Items.COMMAND_BLOCK_MINECART),
-            new SkinOption("Heartflame Axe", Items.MINECART)
+            new SkinOption("Heartflame Axe", Items.MINECART),
+            new SkinOption("Void Colossus Axe", Items.CHEST_MINECART)
         });
 
         resetDefaults();

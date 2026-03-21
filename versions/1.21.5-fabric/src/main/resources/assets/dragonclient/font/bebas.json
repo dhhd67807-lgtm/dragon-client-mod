@@ -2,7 +2,7 @@
   "providers": [
     {
       "type": "ttf",
-      "file": "dragonclient:font/BebasNeue-Regular.ttf",
+      "file": "dragonclient:font/bebasneue-regular.ttf",
       "size": 11.0,
       "oversample": 2.0,
       "shift": [0.0, 0.0],

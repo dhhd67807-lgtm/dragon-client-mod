@@ -1,0 +1,7 @@
+{
+  "parent": "nazgul_weaponry_vol_6:item/straght_sword_noanim",
+  "textures": {
+    "0": "nazgul_weaponry_vol_6:item/blood_sword",
+    "particle": "nazgul_weaponry_vol_6:item/blood_sword"
+  }
+}

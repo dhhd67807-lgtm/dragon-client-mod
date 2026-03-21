@@ -2,7 +2,7 @@
   "providers": [
     {
       "type": "bitmap",
-      "file": "dragonclient:textures/font/ascii.png",
+      "file": "dragonclient:font/ascii.png",
       "height": 8,
       "ascent": 7,
       "chars": [

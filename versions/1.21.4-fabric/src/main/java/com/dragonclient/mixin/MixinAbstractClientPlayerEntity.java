@@ -1,20 +1,11 @@
 package com.dragonclient.mixin;
 
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import org.spongepowered.asm.mixin.injection.Inject;
-
-import org.spongepowered.asm.mixin.injection.At;
-
-import net.minecraft.text.Text;
-
-import com.dragonclient.util.TierTagManager;
-
 import com.dragonclient.cosmetics.CapeManager;
 import com.dragonclient.cosmetics.SkinManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -24,35 +15,33 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(AbstractClientPlayerEntity.class)
 public abstract class MixinAbstractClientPlayerEntity {
-    
+
     @Shadow @Nullable
     public abstract PlayerListEntry getPlayerListEntry();
-    
+
     /**
      * @author DragonClient
      * @reason Custom skin and cape textures for all player rendering contexts
      */
     @Overwrite
     public SkinTextures getSkinTextures() {
-        AbstractClientPlayerEntity player = (AbstractClientPlayerEntity)(Object)this;
-        boolean isLocalPlayer = MinecraftClient.getInstance() != null && player == MinecraftClient.getInstance().player;
+        AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
+        MinecraftClient client = MinecraftClient.getInstance();
+        boolean isLocalPlayer = client != null && player == client.player;
         String playerName = player.getName().getString();
-        
-        // Get vanilla skin textures as fallback
+
+        // Use vanilla fallback (DefaultSkinHelper) when PlayerListEntry is null.
+        // This preserves the authlib skin-loading pipeline in multiplayer.
         PlayerListEntry entry = getPlayerListEntry();
-        if (entry == null) {
-            // Return default Steve skin if no player list entry
-            Identifier defaultSkin = Identifier.of("minecraft", "textures/entity/player/wide/steve.png");
-            return new SkinTextures(defaultSkin, null, null, null, SkinTextures.Model.WIDE, false);
-        }
-        
-        SkinTextures vanilla = entry.getSkinTextures();
-        
-        // Check for custom skin
+        SkinTextures vanilla = entry != null
+            ? entry.getSkinTextures()
+            : DefaultSkinHelper.getSkinTextures(player.getGameProfile());
+
+        // Apply DragonClient custom skin if configured
         Identifier customSkin = SkinManager.getInstance().getCustomSkin(playerName);
         Identifier skinTexture = customSkin != null ? customSkin : vanilla.texture();
-        
-        // Check for custom cape
+
+        // Apply DragonClient custom cape (local player only)
         CapeManager capeManager = CapeManager.getInstance();
         Identifier capeTexture = vanilla.capeTexture();
         if (isLocalPlayer && capeManager.hasCapeEquipped()) {
@@ -61,15 +50,14 @@ public abstract class MixinAbstractClientPlayerEntity {
                 capeTexture = customCape;
             }
         }
-        
+
         // Determine model (slim/wide)
         SkinTextures.Model model = vanilla.model();
         if (customSkin != null) {
-            // Use model from SkinManager if available
             String skinModel = SkinManager.getInstance().getSkinModel(playerName);
             model = "slim".equals(skinModel) ? SkinTextures.Model.SLIM : SkinTextures.Model.WIDE;
         }
-        
+
         return new SkinTextures(
             skinTexture,
             vanilla.textureUrl(),

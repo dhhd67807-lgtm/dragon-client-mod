@@ -70,23 +70,35 @@ public final class GearSkinManager {
 
     static {
         OPTIONS.put(Category.SWORD, new SkinOption[] {
+            new SkinOption("Dark Sword", "dc_dark_sword"),
+            new SkinOption("Cursed Sword", "dc_cursed_sword"),
+            new SkinOption("Demonic Blade", "dc_demonic_blade"),
+            new SkinOption("Holy Spear", "dc_holy_spear"),
+            new SkinOption("Kaz Scythe", "dc_kaz_sc"),
+            new SkinOption("Magnetic Blade", "dc_magnetic_blade"),
+            new SkinOption("Pox Spreader", "dc_pox_spreader"),
+            new SkinOption("Red Hammer", "dc_red_hammer"),
             new SkinOption("Straight Sword", "dc_straight_sword"),
             new SkinOption("Bloodhound", "dc_bloodhound"),
             new SkinOption("Euphoria", "dc_euphoria"),
-            new SkinOption("Red Lightning", "dc_red_lightning"),
             new SkinOption("Great Sword", "dc_great_sword"),
             new SkinOption("Winged Scythe", "dc_winged_scythe"),
-            new SkinOption("Heartflame Sword", "heartflame_sword_dc")
+            new SkinOption("Red Lightning", "dc_red_lightning"),
+            new SkinOption("Heartflame Sword", "heartflame_sword_dc"),
+            new SkinOption("Void Colossus Broadsword", "void/void_colossus_broadsword")
         });
 
         OPTIONS.put(Category.PICKAXE, new SkinOption[] {
-            new SkinOption("Ice Axe", "dc_ice_axe"),
-            new SkinOption("Heartflame Pickaxe", "heartflame_pickaxe_dc")
+            new SkinOption("Heartflame Pickaxe", "heartflame_pickaxe_dc"),
+            new SkinOption("Mana Pickaxe", "dc_mana_pickaxe"),
+            new SkinOption("Void Colossus Pickaxe", "void/void_colossus_pickaxe")
         });
 
         OPTIONS.put(Category.AXE, new SkinOption[] {
+            new SkinOption("Heartflame Axe", "heartflame_axe_dc"),
+            new SkinOption("Mana Axe", "dc_mana_axe"),
             new SkinOption("Ice Axe", "dc_ice_axe"),
-            new SkinOption("Heartflame Axe", "heartflame_axe_dc")
+            new SkinOption("Void Colossus Axe", "void/void_colossus_axe")
         });
 
         resetDefaults();
@@ -308,12 +320,10 @@ public final class GearSkinManager {
                 if (client == null || client.player == null) {
                     return original;
                 }
-                // Do not force local selection on other server players.
                 if (!player.getUuid().equals(client.player.getUuid())) {
                     return original;
                 }
             } else {
-                // Non-player entity/item-frame/item-entity stays vanilla.
                 return original;
             }
         }
