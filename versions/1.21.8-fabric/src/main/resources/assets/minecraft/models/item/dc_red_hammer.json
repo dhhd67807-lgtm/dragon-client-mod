@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/handheld",
-  "textures": {
-    "layer0": "nazgul_weaponry_vol_5:item/red_hammer"
-  }
+  "parent": "nazgul_weaponry_vol_5:item/red_hammer"
 }

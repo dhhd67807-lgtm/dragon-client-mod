@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/handheld",
-  "textures": {
-    "layer0": "nazgul_weaponry_vol_5:item/mana_axe"
-  }
+  "parent": "nazgul_weaponry_vol_5:item/mana_axe"
 }
