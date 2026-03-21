@@ -1,3 +1,6 @@
 {
-  "parent": "nazgul_weaponry_vol_6:item/straght_sword"
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "nazgul_weaponry_vol_6:item/straight_sword"
+  }
 }

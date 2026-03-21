@@ -1,3 +1,6 @@
 {
-  "parent": "nazgul_weaponry_vol_6:item/ice_axe"
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "nazgul_weaponry_vol_6:item/ice_axe"
+  }
 }

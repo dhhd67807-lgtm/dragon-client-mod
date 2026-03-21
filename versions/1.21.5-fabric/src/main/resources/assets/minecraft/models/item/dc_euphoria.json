@@ -1,3 +1,6 @@
 {
-  "parent": "nazgul_weaponry_vol_6:item/euphoria"
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "nazgul_weaponry_vol_6:item/euphoria"
+  }
 }

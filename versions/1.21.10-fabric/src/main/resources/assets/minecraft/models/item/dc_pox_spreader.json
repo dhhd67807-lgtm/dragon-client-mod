@@ -1,3 +1,6 @@
 {
-  "parent": "nazgul_weaponry_vol_5:item/pox_spreader"
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "nazgul_weaponry_vol_5:item/pox_spreader"
+  }
 }
