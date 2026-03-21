@@ -2,8 +2,8 @@
   "format_version": "1.9.0",
   "credit": "Made with Blockbench",
   "textures": {
-    "0": "nazgul_weaponry_vol_5:chaos_bow",
-    "particle": "nazgul_weaponry_vol_5:chaos_bow"
+    "0": "nazgul_weaponry_vol_5:item/chaos_bow",
+    "particle": "nazgul_weaponry_vol_5:item/chaos_bow"
   },
   "elements": [
     {

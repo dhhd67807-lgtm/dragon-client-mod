@@ -8,8 +8,8 @@ public class ArmorStatusHud extends HudModule {
     
     public ArmorStatusHud() {
         super("Armor Status", "Displays armor durability");
-        this.x = 5;  // Top left, below hunger
-        this.y = 105;
+        this.x = 24;
+        this.y = 262;
     }
 
     @Override
@@ -18,6 +18,7 @@ public class ArmorStatusHud extends HudModule {
         
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
+        applyDefaultTopLeft(client, 24, 262);
         
         // 1.21.11: getArmorItems() removed - use EquipmentSlot
         net.minecraft.entity.EquipmentSlot[] armorSlots = {
@@ -36,12 +37,7 @@ public class ArmorStatusHud extends HudModule {
                 int iconX = x + iconIndex * (iconSize + iconSpacing);
                 int iconY = y;
 
-                // Draw card-style background around each armor piece icon.
-                context.fill(iconX - 2, iconY - 2, iconX + iconSize + 2, iconY + iconSize + 2, 0x801D1C1C);
-                context.fill(iconX - 2, iconY - 2, iconX + iconSize + 2, iconY - 1, 0xFF161616); // Top
-                context.fill(iconX - 2, iconY + iconSize + 1, iconX + iconSize + 2, iconY + iconSize + 2, 0xFF161616); // Bottom
-                context.fill(iconX - 2, iconY - 2, iconX - 1, iconY + iconSize + 2, 0xFF161616); // Left
-                context.fill(iconX + iconSize + 1, iconY - 2, iconX + iconSize + 2, iconY + iconSize + 2, 0xFF161616); // Right
+                drawLiquidGlassPanel(context, iconX - 3, iconY - 3, iconX + iconSize + 3, iconY + iconSize + 3, false);
 
                 // Draw the real equipped armor item icon.
                 context.drawItem(armor, iconX, iconY);
@@ -54,11 +50,7 @@ public class ArmorStatusHud extends HudModule {
             int textWidth = client.textRenderer.getWidth(text);
             int textHeight = client.textRenderer.fontHeight;
 
-            context.fill(x - 6, y - 6, x + textWidth + 6, y + textHeight + 6, 0x801D1C1C);
-            context.fill(x - 6, y - 6, x + textWidth + 6, y - 5, 0xFF161616); // Top
-            context.fill(x - 6, y + textHeight + 5, x + textWidth + 6, y + textHeight + 6, 0xFF161616); // Bottom
-            context.fill(x - 6, y - 6, x - 5, y + textHeight + 6, 0xFF161616); // Left
-            context.fill(x + textWidth + 5, y - 6, x + textWidth + 6, y + textHeight + 6, 0xFF161616); // Right
+            drawLiquidGlassTextPanel(context, textWidth, textHeight);
             context.drawText(client.textRenderer, text, x, y, 0xFFFFFFFF, false);
 
             this.width = textWidth;

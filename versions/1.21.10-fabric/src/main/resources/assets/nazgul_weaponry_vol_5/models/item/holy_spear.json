@@ -2,9 +2,9 @@
   "format_version": "1.9.0",
   "credit": "Made with Blockbench",
   "textures": {
-    "0": "nazgul_weaponry_vol_5:holy_spear",
-    "1": "nazgul_weaponry_vol_5:holy_spear_anim",
-    "particle": "nazgul_weaponry_vol_5:holy_spear"
+    "0": "nazgul_weaponry_vol_5:item/holy_spear",
+    "1": "nazgul_weaponry_vol_5:item/holy_spear_anim",
+    "particle": "nazgul_weaponry_vol_5:item/holy_spear"
   },
   "elements": [
     {

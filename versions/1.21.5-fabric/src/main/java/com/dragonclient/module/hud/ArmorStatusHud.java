@@ -37,7 +37,7 @@ public class ArmorStatusHud extends HudModule {
                 int iconY = y;
 
                 // Draw card-style background around each armor piece icon.
-                context.fill(iconX - 2, iconY - 2, iconX + iconSize + 2, iconY + iconSize + 2, 0x801D1C1C);
+                context.fill(iconX - 2, iconY - 2, iconX + iconSize + 2, iconY + iconSize + 2, 0x551D1C1C);
                 context.fill(iconX - 2, iconY - 2, iconX + iconSize + 2, iconY - 1, 0xFF161616); // Top
                 context.fill(iconX - 2, iconY + iconSize + 1, iconX + iconSize + 2, iconY + iconSize + 2, 0xFF161616); // Bottom
                 context.fill(iconX - 2, iconY - 2, iconX - 1, iconY + iconSize + 2, 0xFF161616); // Left
@@ -54,11 +54,11 @@ public class ArmorStatusHud extends HudModule {
             int textWidth = client.textRenderer.getWidth(text);
             int textHeight = client.textRenderer.fontHeight;
 
-            context.fill(x - 6, y - 6, x + textWidth + 6, y + textHeight + 6, 0x801D1C1C);
-            context.fill(x - 6, y - 6, x + textWidth + 6, y - 5, 0xFF161616); // Top
-            context.fill(x - 6, y + textHeight + 5, x + textWidth + 6, y + textHeight + 6, 0xFF161616); // Bottom
-            context.fill(x - 6, y - 6, x - 5, y + textHeight + 6, 0xFF161616); // Left
-            context.fill(x + textWidth + 5, y - 6, x + textWidth + 6, y + textHeight + 6, 0xFF161616); // Right
+            context.fill(x - 8, y - 8, x + textWidth + 8, y + textHeight + 8, 0x551D1C1C);
+            context.fill(x - 8, y - 8, x + textWidth + 8, y - 7, 0xFF161616); // Top
+            context.fill(x - 8, y + textHeight + 7, x + textWidth + 8, y + textHeight + 8, 0xFF161616); // Bottom
+            context.fill(x - 8, y - 8, x - 7, y + textHeight + 8, 0xFF161616); // Left
+            context.fill(x + textWidth + 7, y - 8, x + textWidth + 8, y + textHeight + 8, 0xFF161616); // Right
             context.drawText(client.textRenderer, text, x, y, 0xFFFFFFFF, false);
 
             this.width = textWidth;

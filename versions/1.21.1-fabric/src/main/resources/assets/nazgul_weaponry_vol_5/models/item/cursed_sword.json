@@ -2,10 +2,10 @@
   "format_version": "1.9.0",
   "credit": "Made with Blockbench",
   "textures": {
-    "0": "nazgul_weaponry_vol_5:cursed_sword",
-    "1": "nazgul_weaponry_vol_5:cursed_sword_anim",
-    "2": "nazgul_weaponry_vol_5:cursed_sword_anim1",
-    "particle": "nazgul_weaponry_vol_5:cursed_sword"
+    "0": "nazgul_weaponry_vol_5:item/cursed_sword",
+    "1": "nazgul_weaponry_vol_5:item/cursed_sword_anim",
+    "2": "nazgul_weaponry_vol_5:item/cursed_sword_anim1",
+    "particle": "nazgul_weaponry_vol_5:item/cursed_sword"
   },
   "elements": [
     {

@@ -78,7 +78,7 @@ public class PotionEffectsHud extends HudModule {
 
     private static void drawEntryBox(DrawContext context, int x, int y, int width, int height) {
         // Background: #1D1C1C at 50%
-        context.fill(x, y, x + width, y + height, 0x801D1C1C);
+        context.fill(x, y, x + width, y + height, 0x551D1C1C);
 
         // Border: #161616
         context.fill(x, y, x + width, y + 1, 0xFF161616);

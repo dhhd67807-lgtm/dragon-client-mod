@@ -39,7 +39,7 @@ public class KeystrokesHud extends HudModule {
 
     private void drawKey(DrawContext context, String key, int x, int y, boolean pressed, int width) {
         // Background - darker when pressed, lighter when not pressed
-        int bgColor = pressed ? 0xFF0A0A0A : 0x801D1C1C;  // Darker black when pressed
+        int bgColor = pressed ? 0xFF0A0A0A : 0x551D1C1C;  // Darker black when pressed
         context.fill(x, y, x + width, y + 18, bgColor);
         // Outer border - #161616 at 100% opacity
         context.fill(x, y, x + width, y + 1, 0xFF161616); // Top
@@ -48,8 +48,8 @@ public class KeystrokesHud extends HudModule {
         context.fill(x + width - 1, y, x + width, y + 18, 0xFF161616); // Right
         
         // Draw inset shadow - Dark gray for depth
-        context.fill(x + 1, y + 1, x + width - 1, y + 2, 0x80000000); // Top inner shadow
-        context.fill(x + 1, y + 1, x + 2, y + 17, 0x80000000); // Left inner shadow
+        context.fill(x + 1, y + 1, x + width - 1, y + 2, 0x50000000); // Top inner shadow
+        context.fill(x + 1, y + 1, x + 2, y + 17, 0x50000000); // Left inner shadow
         
         MinecraftClient client = MinecraftClient.getInstance();
         int textX = x + (width - client.textRenderer.getWidth(key)) / 2;
