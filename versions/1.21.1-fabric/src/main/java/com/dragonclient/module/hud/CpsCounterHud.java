@@ -13,8 +13,8 @@ public class CpsCounterHud extends HudModule {
 
     public CpsCounterHud() {
         super("CPS Counter", "Displays clicks per second");
-        this.x = 5;  // Top left, below FPS
-        this.y = 25;
+        this.x = 24;
+        this.y = 118;
     }
 
     public void registerClick() {
@@ -43,22 +43,11 @@ public class CpsCounterHud extends HudModule {
         trackClicks(client);
         String cps = getCPS() + " CPS";
         
-        // Draw background - #1D1C1C at 50% opacity
         int textWidth = client.textRenderer.getWidth(cps);
         int textHeight = client.textRenderer.fontHeight;
-        context.fill(x - 8, y - 8, x + textWidth + 8, y + textHeight + 8, 0x551D1C1C);
-        
-        // Draw outer border - #161616 at 100% opacity
-        context.fill(x - 8, y - 8, x + textWidth + 8, y - 7, 0xFF161616); // Top
-        context.fill(x - 8, y + textHeight + 7, x + textWidth + 8, y + textHeight + 8, 0xFF161616); // Bottom
-        context.fill(x - 8, y - 8, x - 7, y + textHeight + 8, 0xFF161616); // Left
-        context.fill(x + textWidth + 7, y - 8, x + textWidth + 8, y + textHeight + 8, 0xFF161616); // Right
-        
-        // Draw inset shadow - Dark gray for depth
-        context.fill(x - 7, y - 7, x + textWidth + 7, y - 6, 0x50000000); // Top inner shadow
-        context.fill(x - 7, y - 7, x - 6, y + textHeight + 7, 0x50000000); // Left inner shadow
-        
-        // Draw text - White at 100% opacity without shadow
+        applyDefaultTopRight(client, textWidth + (PANEL_PADDING_X * 2), 118);
+        drawLiquidGlassTextPanel(context, textWidth, textHeight);
+
         context.drawText(client.textRenderer, cps, x, y, 0xFFFFFFFF, false);
         this.width = textWidth;
         this.height = textHeight;

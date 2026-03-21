@@ -8,8 +8,8 @@ public class KeystrokesHud extends HudModule {
     
     public KeystrokesHud() {
         super("Keystrokes", "Displays key presses");
-        this.x = 340;  // Far right bottom
-        this.y = 280;
+        this.x = 8;
+        this.y = 8;
         this.width = 60;
         this.height = 60;
     }
@@ -19,6 +19,7 @@ public class KeystrokesHud extends HudModule {
         if (!isEnabled()) return;
         
         MinecraftClient client = MinecraftClient.getInstance();
+        applyDefaultBottomRight(client, width, height, 16, 52);
         GameOptions options = client.options;
         
         // W key
@@ -38,23 +39,12 @@ public class KeystrokesHud extends HudModule {
     }
 
     private void drawKey(DrawContext context, String key, int x, int y, boolean pressed, int width) {
-        // Background - darker when pressed, lighter when not pressed
-        int bgColor = pressed ? 0xFF0A0A0A : 0x551D1C1C;  // Darker black when pressed
-        context.fill(x, y, x + width, y + 18, bgColor);
-        // Outer border - #161616 at 100% opacity
-        context.fill(x, y, x + width, y + 1, 0xFF161616); // Top
-        context.fill(x, y + 17, x + width, y + 18, 0xFF161616); // Bottom
-        context.fill(x, y, x + 1, y + 18, 0xFF161616); // Left
-        context.fill(x + width - 1, y, x + width, y + 18, 0xFF161616); // Right
-        
-        // Draw inset shadow - Dark gray for depth
-        context.fill(x + 1, y + 1, x + width - 1, y + 2, 0x50000000); // Top inner shadow
-        context.fill(x + 1, y + 1, x + 2, y + 17, 0x50000000); // Left inner shadow
+        drawLiquidGlassPanel(context, x, y, x + width, y + 18, pressed);
         
         MinecraftClient client = MinecraftClient.getInstance();
         int textX = x + (width - client.textRenderer.getWidth(key)) / 2;
         int textY = y + 5;
-        // Text - White without shadow
-        context.drawText(client.textRenderer, key, textX, textY, 0xFFFFFFFF, false);
+        int textColor = pressed ? 0xFFFFFFFF : 0xFFE6F2FF;
+        context.drawText(client.textRenderer, key, textX, textY, textColor, false);
     }
 }

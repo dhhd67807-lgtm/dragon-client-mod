@@ -13,8 +13,8 @@ public class PotionEffectsHud extends HudModule {
 
     public PotionEffectsHud() {
         super("Potion Effects", "Displays active potion effects");
-        this.x = 420;
-        this.y = 30;
+        this.x = 24;
+        this.y = 262;
         this.width = 110;
         this.height = 18;
     }
@@ -29,6 +29,8 @@ public class PotionEffectsHud extends HudModule {
         if (client.textRenderer == null) {
             return;
         }
+
+        applyDefaultTopRight(client, this.width, 262);
 
         Collection<StatusEffectInstance> active =
             client.player != null ? client.player.getStatusEffects() : List.of();
@@ -69,22 +71,15 @@ public class PotionEffectsHud extends HudModule {
             context.drawText(client.textRenderer, text, x + 6, drawY + 4, 0xFFFFFFFF, false);
 
             maxWidth = Math.max(maxWidth, boxWidth);
-            yOffset += boxHeight + 2;
+            yOffset += boxHeight + 4;
         }
 
         this.width = maxWidth;
         this.height = Math.max(18, yOffset - 2);
     }
 
-    private static void drawEntryBox(DrawContext context, int x, int y, int width, int height) {
-        // Background: #1D1C1C at 50%
-        context.fill(x, y, x + width, y + height, 0x801D1C1C);
-
-        // Border: #161616
-        context.fill(x, y, x + width, y + 1, 0xFF161616);
-        context.fill(x, y + height - 1, x + width, y + height, 0xFF161616);
-        context.fill(x, y, x + 1, y + height, 0xFF161616);
-        context.fill(x + width - 1, y, x + width, y + height, 0xFF161616);
+    private void drawEntryBox(DrawContext context, int x, int y, int width, int height) {
+        drawLiquidGlassPanel(context, x, y, x + width, y + height, false);
     }
 
     private static String formatAmplifier(int amplifier) {

@@ -57,7 +57,7 @@ public class HudRenderer {
                         var matrices = context.getMatrices();
                         matrices.push();
                         
-                        float moduleScale = hudModule.getScale() / 4.0f; // Normalize to base scale (4.0)
+                        float moduleScale = hudModule.getScale();
                         matrices.translate((float)hudModule.getX(), (float)hudModule.getY(), 0f);
                         matrices.scale(moduleScale, moduleScale, 1.0f);
                         matrices.translate((float)-hudModule.getX(), (float)-hudModule.getY(), 0f);

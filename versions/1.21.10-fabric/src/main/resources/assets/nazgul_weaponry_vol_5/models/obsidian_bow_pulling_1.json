@@ -6,9 +6,9 @@
     64
   ],
   "textures": {
-    "0": "nazgul_weaponry_vol_5:chaos_bow",
-    "1": "nazgul_weaponry_vol_5:chaos_bow_anim",
-    "particle": "nazgul_weaponry_vol_5:chaos_bow"
+    "0": "nazgul_weaponry_vol_5:item/chaos_bow",
+    "1": "nazgul_weaponry_vol_5:item/chaos_bow_anim",
+    "particle": "nazgul_weaponry_vol_5:item/chaos_bow"
   },
   "elements": [
     {

@@ -135,8 +135,8 @@ public class DragonClientScreen extends Screen {
         int tabX = fixedGuiLeft + 15;
         int tabY = fixedGuiTop + 65;
         int tabIndex = 0;
-        int tabWidth = 90; // Increased from 70
-        int tabSpacing = 95; // Increased spacing between tabs
+        int tabWidth = 104; // Increased from 70
+        int tabSpacing = 110; // Increased spacing between tabs
         
         for (ModuleCategory category : ModuleCategory.values()) {
             boolean isSelected = category == selectedCategory;
@@ -329,8 +329,8 @@ public class DragonClientScreen extends Screen {
         int tabX = fixedGuiLeft + 15;
         int tabY = fixedGuiTop + 65;
         int tabIndex = 0;
-        int tabWidth = 90;
-        int tabSpacing = 95;
+        int tabWidth = 104;
+        int tabSpacing = 110;
         
         for (ModuleCategory category : ModuleCategory.values()) {
             if (mx >= tabX + (tabIndex * tabSpacing) && mx <= tabX + (tabIndex * tabSpacing) + tabWidth &&

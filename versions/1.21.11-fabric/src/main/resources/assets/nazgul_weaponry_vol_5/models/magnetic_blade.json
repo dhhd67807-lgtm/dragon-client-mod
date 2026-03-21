@@ -6,9 +6,9 @@
     32
   ],
   "textures": {
-    "0": "nazgul_weaponry_vol_5:mafnetic_blade",
-    "1": "nazgul_weaponry_vol_5:magnetic_blade_anim",
-    "particle": "nazgul_weaponry_vol_5:mafnetic_blade"
+    "0": "nazgul_weaponry_vol_5:item/mafnetic_blade",
+    "1": "nazgul_weaponry_vol_5:item/magnetic_blade_anim",
+    "particle": "nazgul_weaponry_vol_5:item/mafnetic_blade"
   },
   "elements": [
     {

@@ -50,26 +50,19 @@ public class HudEditorScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Draw semi-transparent background
-        context.fill(0, 0, this.width, this.height, 0x80000000);
+        // Don't draw background - let HUD elements show clearly
         
         MinecraftClient client = MinecraftClient.getInstance();
-        // Calculate scale factor to match in-game HUD rendering
-        float scaleX = client.getWindow().getScaledWidth() / 1920f;
-        float scaleY = client.getWindow().getScaledHeight() / 1080f;
-        float hudScale = Math.min(scaleX, scaleY);
         
         if (debugLog != null) {
             debugLog.println("RENDER: screenWidth=" + this.width + " screenHeight=" + this.height);
-            debugLog.println("  scaledWidth=" + client.getWindow().getScaledWidth() + " scaledHeight=" + client.getWindow().getScaledHeight());
-            debugLog.println("  scaleX=" + scaleX + " scaleY=" + scaleY + " hudScale=" + hudScale);
             debugLog.println("  mouseX=" + mouseX + " mouseY=" + mouseY);
         }
         
         // Handle dragging in render loop
         if (selectedModule != null && selectedModule.isDragging()) {
-            int transformedMouseX = (int)(mouseX / hudScale);
-            int transformedMouseY = (int)(mouseY / hudScale);
+            int transformedMouseX = (int) mouseX;
+            int transformedMouseY = (int) mouseY;
             
             int newX = transformedMouseX - dragOffsetX;
             int newY = transformedMouseY - dragOffsetY;
@@ -80,7 +73,6 @@ public class HudEditorScreen extends Screen {
         
         var matrices = context.getMatrices();
         matrices.push();
-        matrices.scale(hudScale, hudScale, 1.0f); // 2D scale for 1.21.11
         
         // Render all HUD modules with scaling and opacity
         int moduleCount = 0;
@@ -98,6 +90,10 @@ public class HudEditorScreen extends Screen {
                 
                 // Save matrix state
                 matrices.push();
+                float moduleScale = hudModule.getScale();
+                matrices.translate((float) hudModule.getX(), (float) hudModule.getY(), 0f);
+                matrices.scale(moduleScale, moduleScale, 1.0f);
+                matrices.translate((float) -hudModule.getX(), (float) -hudModule.getY(), 0f);
                 
                 // Apply opacity for non-selected modules by drawing with reduced alpha
                 boolean isSelected = (hudModule == selectedModule);
@@ -109,8 +105,8 @@ public class HudEditorScreen extends Screen {
                 if (!isSelected) {
                     int x = hudModule.getX();
                     int y = hudModule.getY();
-                    int w = hudModule.getWidth();
-                    int h = hudModule.getHeight();
+                    int w = (int)(hudModule.getWidth() * moduleScale);
+                    int h = (int)(hudModule.getHeight() * moduleScale);
                     // Draw 50% black overlay to simulate reduced opacity
                     context.fill(x, y, x + w, y + h, 0x80000000);
                 }
@@ -151,7 +147,7 @@ public class HudEditorScreen extends Screen {
             context.drawText(this.textRenderer, info, 10, 55, 0xFF00FF00, true);
         }
         
-        super.render(context, mouseX, mouseY, delta);
+        // Don't call super.render() - it draws the blur background
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -163,21 +159,15 @@ public class HudEditorScreen extends Screen {
         
         // Accept both button 0 (left) and button 1 (which might be left on Mac)
         if (button == 0 || button == 1) {
-            MinecraftClient client = MinecraftClient.getInstance();
-            float scaleX = client.getWindow().getScaledWidth() / 1920f;
-            float scaleY = client.getWindow().getScaledHeight() / 1080f;
-            float hudScale = Math.min(scaleX, scaleY);
-            
             // Transform mouse coordinates to HUD space
-            int transformedMouseX = (int)(mouseX / hudScale);
-            int transformedMouseY = (int)(mouseY / hudScale);
+            int transformedMouseX = (int) mouseX;
+            int transformedMouseY = (int) mouseY;
             
             if (debugLog != null) {
-                debugLog.println("  hudScale=" + hudScale);
                 debugLog.println("  transformedMouseX=" + transformedMouseX + " transformedMouseY=" + transformedMouseY);
             }
             
-            System.out.println("HUD Editor Click: mouseX=" + transformedMouseX + " mouseY=" + transformedMouseY + " scale=" + hudScale);
+            System.out.println("HUD Editor Click: mouseX=" + transformedMouseX + " mouseY=" + transformedMouseY);
             
             // Check if clicking on any HUD module
             int checkCount = 0;
@@ -186,8 +176,9 @@ public class HudEditorScreen extends Screen {
                     HudModule hudModule = (HudModule) module;
                     int x = hudModule.getX();
                     int y = hudModule.getY();
-                    int w = hudModule.getWidth();
-                    int h = hudModule.getHeight();
+                    float moduleScale = hudModule.getScale();
+                    int w = (int)(hudModule.getWidth() * moduleScale);
+                    int h = (int)(hudModule.getHeight() * moduleScale);
                     
                     checkCount++;
                     boolean isInside = transformedMouseX >= x && transformedMouseX <= x + w && 
@@ -256,14 +247,9 @@ public class HudEditorScreen extends Screen {
         }
         
         if ((button == 0 || button == 1) && selectedModule != null && selectedModule.isDragging()) {
-            MinecraftClient client = MinecraftClient.getInstance();
-            float scaleX = client.getWindow().getScaledWidth() / 1920f;
-            float scaleY = client.getWindow().getScaledHeight() / 1080f;
-            float hudScale = Math.min(scaleX, scaleY);
-            
             // Transform mouse coordinates to HUD space
-            int transformedMouseX = (int)(mouseX / hudScale);
-            int transformedMouseY = (int)(mouseY / hudScale);
+            int transformedMouseX = (int) mouseX;
+            int transformedMouseY = (int) mouseY;
             
             int newX = transformedMouseX - dragOffsetX;
             int newY = transformedMouseY - dragOffsetY;

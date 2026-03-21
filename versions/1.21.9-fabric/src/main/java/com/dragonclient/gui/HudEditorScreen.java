@@ -67,8 +67,8 @@ public class HudEditorScreen extends Screen {
         
         // Handle dragging in render loop
         if (selectedModule != null && selectedModule.isDragging()) {
-            int transformedMouseX = (int)(mouseX / hudScale);
-            int transformedMouseY = (int)(mouseY / hudScale);
+            int transformedMouseX = (int) mouseX;
+            int transformedMouseY = (int) mouseY;
             
             int newX = transformedMouseX - dragOffsetX;
             int newY = transformedMouseY - dragOffsetY;
@@ -79,7 +79,6 @@ public class HudEditorScreen extends Screen {
         
         var matrices = context.getMatrices();
         matrices.pushMatrix();
-        matrices.scale(hudScale, hudScale);
         
         // Render all HUD modules with scaling (same as HudRenderer does in-game)
         int moduleCount = 0;
@@ -98,7 +97,7 @@ public class HudEditorScreen extends Screen {
                 // Apply module-specific scaling (same as HudRenderer)
                 matrices.pushMatrix();
                 
-                float moduleScale = hudModule.getScale() / 4.0f; // Normalize to base scale (4.0)
+                float moduleScale = hudModule.getScale();
                 matrices.translate(hudModule.getX(), hudModule.getY());
                 matrices.scale(moduleScale, moduleScale);
                 matrices.translate(-hudModule.getX(), -hudModule.getY());
@@ -163,8 +162,8 @@ public class HudEditorScreen extends Screen {
             float hudScale = baseScale / (float)guiScale;
             
             // Transform mouse coordinates to HUD space
-            int transformedMouseX = (int)(mouseX / hudScale);
-            int transformedMouseY = (int)(mouseY / hudScale);
+            int transformedMouseX = (int) mouseX;
+            int transformedMouseY = (int) mouseY;
             
             if (debugLog != null) {
                 debugLog.println("  hudScale=" + hudScale);
@@ -186,7 +185,7 @@ public class HudEditorScreen extends Screen {
                     HudModule hudModule = (HudModule) module;
                     int x = hudModule.getX();
                     int y = hudModule.getY();
-                    float moduleScale = hudModule.getScale() / 4.0f; // Normalize to base scale
+                    float moduleScale = hudModule.getScale();
                     int w = (int)(hudModule.getWidth() * moduleScale);
                     int h = (int)(hudModule.getHeight() * moduleScale);
                     
@@ -308,8 +307,8 @@ public class HudEditorScreen extends Screen {
             float hudScale = Math.min(scaleX, scaleY);
             
             // Transform mouse coordinates to HUD space
-            int transformedMouseX = (int)(mouseX / hudScale);
-            int transformedMouseY = (int)(mouseY / hudScale);
+            int transformedMouseX = (int) mouseX;
+            int transformedMouseY = (int) mouseY;
             
             int newX = transformedMouseX - dragOffsetX;
             int newY = transformedMouseY - dragOffsetY;

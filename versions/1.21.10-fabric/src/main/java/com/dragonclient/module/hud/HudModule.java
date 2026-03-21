@@ -176,8 +176,8 @@ public abstract class HudModule extends Module {
             return;
         }
 
-        // True capsule: radius follows panel height for consistent smooth pills.
-        int radius = Math.max(1, Math.min(width / 2, height / 2));
+        // Full capsule radius for the cleanest rounded ends.
+        int radius = Math.max(2, Math.min(width / 2, height / 2));
         int panelColor = pressed ? 0x78000000 : 0x60000000;
 
         // Single fill avoids side color mismatch from offset shadows.
@@ -220,14 +220,24 @@ public abstract class HudModule extends Module {
                 context.fill(x1, top + y, x2, top + y + 1, color);
             }
 
-            // Feather a single pixel at each curved side.
+            // Feather outer edge on curved rows for smoother capsule corners.
             if (alpha > 0 && inset > 0 && (y < r || y >= height - r)) {
                 double edgeCoverage = Math.max(0.0d, Math.min(1.0d, inset - insetExact));
-                int edgeAlpha = (int) Math.round(alpha * edgeCoverage);
-                if (edgeAlpha > 0) {
-                    int edgeColor = (edgeAlpha << 24) | rgb;
-                    context.fill(x1 - 1, top + y, x1, top + y + 1, edgeColor);
-                    context.fill(x2, top + y, x2 + 1, top + y + 1, edgeColor);
+                double smoothedCoverage =
+                    edgeCoverage * edgeCoverage * (3.0d - (2.0d * edgeCoverage));
+
+                int edgeAlpha1 = (int) Math.round(alpha * smoothedCoverage);
+                if (edgeAlpha1 > 0) {
+                    int edgeColor1 = (edgeAlpha1 << 24) | rgb;
+                    context.fill(x1 - 1, top + y, x1, top + y + 1, edgeColor1);
+                    context.fill(x2, top + y, x2 + 1, top + y + 1, edgeColor1);
+                }
+
+                int edgeAlpha2 = (int) Math.round(alpha * smoothedCoverage * 0.35d);
+                if (edgeAlpha2 > 0 && inset > 1) {
+                    int edgeColor2 = (edgeAlpha2 << 24) | rgb;
+                    context.fill(x1 - 2, top + y, x1 - 1, top + y + 1, edgeColor2);
+                    context.fill(x2 + 1, top + y, x2 + 2, top + y + 1, edgeColor2);
                 }
             }
         }

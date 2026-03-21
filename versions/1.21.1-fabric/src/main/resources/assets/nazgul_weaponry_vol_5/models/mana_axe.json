@@ -6,9 +6,9 @@
     32
   ],
   "textures": {
-    "0": "nazgul_weaponry_vol_5:mana_axe",
-    "1": "nazgul_weaponry_vol_5:mana_axe_anim",
-    "particle": "nazgul_weaponry_vol_5:mana_axe"
+    "0": "nazgul_weaponry_vol_5:item/mana_axe",
+    "1": "nazgul_weaponry_vol_5:item/mana_axe_anim",
+    "particle": "nazgul_weaponry_vol_5:item/mana_axe"
   },
   "elements": [
     {
