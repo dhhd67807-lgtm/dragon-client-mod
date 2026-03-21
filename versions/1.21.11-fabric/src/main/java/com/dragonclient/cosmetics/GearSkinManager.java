@@ -90,20 +90,20 @@ public final class GearSkinManager {
             new SkinOption("Winged Scythe", "dc_winged_scythe"),
             new SkinOption("Red Lightning", "dc_red_lightning"),
             new SkinOption("Heartflame Sword", "heartflame_sword_dc"),
-            new SkinOption("Void Colossus Broadsword", "void:void/void_colossus_broadsword")
+            new SkinOption("Void Colossus Broadsword", "void_colossus_broadsword")
         });
 
         OPTIONS.put(Category.PICKAXE, new SkinOption[] {
             new SkinOption("Heartflame Pickaxe", "heartflame_pickaxe_dc"),
             new SkinOption("Mana Pickaxe", "dc_mana_pickaxe"),
-            new SkinOption("Void Colossus Pickaxe", "void:void/void_colossus_pickaxe")
+            new SkinOption("Void Colossus Pickaxe", "void_colossus_pickaxe")
         });
 
         OPTIONS.put(Category.AXE, new SkinOption[] {
             new SkinOption("Heartflame Axe", "heartflame_axe_dc"),
             new SkinOption("Mana Axe", "dc_mana_axe"),
             new SkinOption("Ice Axe", "dc_ice_axe"),
-            new SkinOption("Void Colossus Axe", "void:void/void_colossus_axe")
+            new SkinOption("Void Colossus Axe", "void_colossus_axe")
         });
 
         resetDefaults();
