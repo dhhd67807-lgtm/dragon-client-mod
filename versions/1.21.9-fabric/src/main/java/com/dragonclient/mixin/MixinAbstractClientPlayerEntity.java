@@ -4,44 +4,44 @@ import com.dragonclient.cosmetics.CapeManager;
 import com.dragonclient.cosmetics.SkinManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.entity.player.PlayerSkinType;
 import net.minecraft.entity.player.SkinTextures;
 import net.minecraft.util.AssetInfo;
 import net.minecraft.util.Identifier;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AbstractClientPlayerEntity.class)
 public abstract class MixinAbstractClientPlayerEntity {
-    
-    @Shadow @Nullable
-    public abstract PlayerListEntry getPlayerListEntry();
-    
-    /**
-     * @author DragonClient
-     * @reason Custom skin and cape textures for all player rendering contexts
-     */
-    @Overwrite
-    public SkinTextures getSkin() {
+
+    @Inject(method = "getSkin", at = @At("RETURN"), cancellable = true, require = 0)
+    private void dragonclient$injectCustomTextures(CallbackInfoReturnable<SkinTextures> cir) {
         AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
+        SkinTextures vanilla = cir.getReturnValue();
+        if (vanilla == null) {
+            return;
+        }
+
         MinecraftClient client = MinecraftClient.getInstance();
         boolean isLocalPlayer = client != null && player == client.player;
+
         String playerName = player.getName().getString();
 
-        PlayerListEntry entry = getPlayerListEntry();
-        SkinTextures vanilla = entry != null ? entry.getSkinTextures() : DefaultSkinHelper.getSkinTextures(player.getGameProfile());
+        SkinManager skinManager = SkinManager.getInstance();
+        Identifier customSkin = skinManager.getCustomSkin(playerName);
+        Identifier customCape = skinManager.getCustomCape(playerName);
 
-        Identifier customSkin = SkinManager.getInstance().getCustomSkin(playerName);
-        Identifier customCape = null;
-        if (isLocalPlayer) {
+        if (customCape == null && isLocalPlayer) {
             CapeManager capeManager = CapeManager.getInstance();
             if (capeManager.hasCapeEquipped()) {
                 customCape = capeManager.getCapeTexture();
             }
+        }
+
+        if (customSkin == null && customCape == null) {
+            return;
         }
 
         AssetInfo.TextureAsset body = customSkin != null
@@ -56,10 +56,12 @@ public abstract class MixinAbstractClientPlayerEntity {
 
         PlayerSkinType model = vanilla.model();
         if (customSkin != null) {
-            String skinModel = SkinManager.getInstance().getSkinModel(playerName);
-            model = "slim".equalsIgnoreCase(skinModel) ? PlayerSkinType.SLIM : PlayerSkinType.WIDE;
+            String skinModel = skinManager.getSkinModel(playerName);
+            model = "slim".equalsIgnoreCase(skinModel)
+                ? PlayerSkinType.SLIM
+                : PlayerSkinType.WIDE;
         }
 
-        return new SkinTextures(body, cape, elytra, model, vanilla.secure());
+        cir.setReturnValue(new SkinTextures(body, cape, elytra, model, vanilla.secure()));
     }
 }

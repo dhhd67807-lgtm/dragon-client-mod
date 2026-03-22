@@ -1,10 +1,7 @@
 package com.dragonclient.mixin;
 
-import net.minecraft.text.Text;
-
-import com.dragonclient.util.TierTagManager;
-
 import com.dragonclient.cosmetics.CapeManager;
+import com.dragonclient.cosmetics.SkinManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.util.SkinTextures;
@@ -15,29 +12,58 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AbstractClientPlayerEntity.class)
-public class MixinAbstractClientPlayerEntity {
-    
+public abstract class MixinAbstractClientPlayerEntity {
+
     @Inject(method = "getSkinTextures", at = @At("RETURN"), cancellable = true, require = 0)
-    private void onGetSkinTextures(CallbackInfoReturnable<SkinTextures> cir) {
+    private void dragonclient$injectCustomTextures(CallbackInfoReturnable<SkinTextures> cir) {
         AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
-        if (MinecraftClient.getInstance() == null || player != MinecraftClient.getInstance().player) {
+        SkinTextures vanilla = cir.getReturnValue();
+        if (vanilla == null) {
             return;
         }
-        CapeManager capeManager = CapeManager.getInstance();
-        if (capeManager.hasCapeEquipped()) {
-            Identifier customCape = capeManager.getCapeTexture();
-            if (customCape != null) {
-                SkinTextures original = cir.getReturnValue();
-                SkinTextures modified = new SkinTextures(
-                    original.texture(),
-                    original.textureUrl(),
-                    customCape, // Custom cape texture
-                    original.elytraTexture(),
-                    original.model(),
-                    original.secure()
-                );
-                cir.setReturnValue(modified);
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        boolean isLocalPlayer = client != null && player == client.player;
+
+        String playerName = player.getGameProfile() != null ? player.getGameProfile().getName() : null;
+        if (playerName == null || playerName.isBlank()) {
+            playerName = player.getName().getString();
+        }
+
+        SkinManager skinManager = SkinManager.getInstance();
+        Identifier customSkin = skinManager.getCustomSkin(playerName);
+        Identifier customCape = skinManager.getCustomCape(playerName);
+
+        if (customCape == null && isLocalPlayer) {
+            CapeManager capeManager = CapeManager.getInstance();
+            if (capeManager.hasCapeEquipped()) {
+                customCape = capeManager.getCapeTexture();
             }
         }
+
+        if (customSkin == null && customCape == null) {
+            return;
+        }
+
+        Identifier skinTexture = customSkin != null ? customSkin : vanilla.texture();
+        Identifier capeTexture = customCape != null ? customCape : vanilla.capeTexture();
+        Identifier elytraTexture = customCape != null ? customCape : vanilla.elytraTexture();
+
+        SkinTextures.Model model = vanilla.model();
+        if (customSkin != null) {
+            String skinModel = skinManager.getSkinModel(playerName);
+            model = "slim".equalsIgnoreCase(skinModel)
+                ? SkinTextures.Model.SLIM
+                : SkinTextures.Model.WIDE;
+        }
+
+        cir.setReturnValue(new SkinTextures(
+            skinTexture,
+            vanilla.textureUrl(),
+            capeTexture,
+            elytraTexture,
+            model,
+            vanilla.secure()
+        ));
     }
 }

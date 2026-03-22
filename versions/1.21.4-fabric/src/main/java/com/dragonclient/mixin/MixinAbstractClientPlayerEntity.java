@@ -4,67 +4,66 @@ import com.dragonclient.cosmetics.CapeManager;
 import com.dragonclient.cosmetics.SkinManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.util.Identifier;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AbstractClientPlayerEntity.class)
 public abstract class MixinAbstractClientPlayerEntity {
 
-    @Shadow @Nullable
-    public abstract PlayerListEntry getPlayerListEntry();
-
-    /**
-     * @author DragonClient
-     * @reason Custom skin and cape textures for all player rendering contexts
-     */
-    @Overwrite
-    public SkinTextures getSkinTextures() {
+    @Inject(method = "getSkinTextures", at = @At("RETURN"), cancellable = true, require = 0)
+    private void dragonclient$injectCustomTextures(CallbackInfoReturnable<SkinTextures> cir) {
         AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
+        SkinTextures vanilla = cir.getReturnValue();
+        if (vanilla == null) {
+            return;
+        }
+
         MinecraftClient client = MinecraftClient.getInstance();
         boolean isLocalPlayer = client != null && player == client.player;
-        String playerName = player.getName().getString();
 
-        // Use vanilla fallback (DefaultSkinHelper) when PlayerListEntry is null.
-        // This preserves the authlib skin-loading pipeline in multiplayer.
-        PlayerListEntry entry = getPlayerListEntry();
-        SkinTextures vanilla = entry != null
-            ? entry.getSkinTextures()
-            : DefaultSkinHelper.getSkinTextures(player.getGameProfile());
+        String playerName = player.getGameProfile() != null ? player.getGameProfile().getName() : null;
+        if (playerName == null || playerName.isBlank()) {
+            playerName = player.getName().getString();
+        }
 
-        // Apply DragonClient custom skin if configured
-        Identifier customSkin = SkinManager.getInstance().getCustomSkin(playerName);
-        Identifier skinTexture = customSkin != null ? customSkin : vanilla.texture();
+        SkinManager skinManager = SkinManager.getInstance();
+        Identifier customSkin = skinManager.getCustomSkin(playerName);
+        Identifier customCape = skinManager.getCustomCape(playerName);
 
-        // Apply DragonClient custom cape (local player only)
-        CapeManager capeManager = CapeManager.getInstance();
-        Identifier capeTexture = vanilla.capeTexture();
-        if (isLocalPlayer && capeManager.hasCapeEquipped()) {
-            Identifier customCape = capeManager.getCapeTexture();
-            if (customCape != null) {
-                capeTexture = customCape;
+        if (customCape == null && isLocalPlayer) {
+            CapeManager capeManager = CapeManager.getInstance();
+            if (capeManager.hasCapeEquipped()) {
+                customCape = capeManager.getCapeTexture();
             }
         }
 
-        // Determine model (slim/wide)
-        SkinTextures.Model model = vanilla.model();
-        if (customSkin != null) {
-            String skinModel = SkinManager.getInstance().getSkinModel(playerName);
-            model = "slim".equals(skinModel) ? SkinTextures.Model.SLIM : SkinTextures.Model.WIDE;
+        if (customSkin == null && customCape == null) {
+            return;
         }
 
-        return new SkinTextures(
+        Identifier skinTexture = customSkin != null ? customSkin : vanilla.texture();
+        Identifier capeTexture = customCape != null ? customCape : vanilla.capeTexture();
+        Identifier elytraTexture = customCape != null ? customCape : vanilla.elytraTexture();
+
+        SkinTextures.Model model = vanilla.model();
+        if (customSkin != null) {
+            String skinModel = skinManager.getSkinModel(playerName);
+            model = "slim".equalsIgnoreCase(skinModel)
+                ? SkinTextures.Model.SLIM
+                : SkinTextures.Model.WIDE;
+        }
+
+        cir.setReturnValue(new SkinTextures(
             skinTexture,
             vanilla.textureUrl(),
             capeTexture,
-            vanilla.elytraTexture(),
+            elytraTexture,
             model,
             vanilla.secure()
-        );
+        ));
     }
 }
