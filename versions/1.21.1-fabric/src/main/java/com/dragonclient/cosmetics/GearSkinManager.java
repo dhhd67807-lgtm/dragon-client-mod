@@ -299,10 +299,14 @@ public final class GearSkinManager {
      * Applies configured Dragon gear skin for player-held items.
      */
     public static synchronized ItemStack getRenderStackForEntity(ItemStack original, @Nullable Entity holder) {
-        if (holder != null) {
-            if (dragonclient$isPreviewDummy(holder) || !(holder instanceof PlayerEntity)) {
-                return original;
-            }
+        if (holder == null) {
+            return getRenderStack(original);
+        }
+        if (dragonclient$isPreviewDummy(holder) || !(holder instanceof PlayerEntity player)) {
+            return original;
+        }
+        if (!dragonclient$shouldApplyToPlayer(player)) {
+            return original;
         }
 
         return getRenderStack(original);
@@ -310,6 +314,17 @@ public final class GearSkinManager {
 
     private static boolean dragonclient$isPreviewDummy(Entity holder) {
         return "com.dragonclient.gui.DummyPlayerEntity".equals(holder.getClass().getName());
+    }
+
+    private static boolean dragonclient$shouldApplyToPlayer(PlayerEntity player) {
+        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+        if (client != null && client.player != null && player.getUuid().equals(client.player.getUuid())) {
+            return true;
+        }
+
+        String playerName = player.getName().getString();
+        SkinManager skinManager = SkinManager.getInstance();
+        return skinManager.hasCustomSkin(playerName) || skinManager.hasCustomCape(playerName);
     }
 
     private static SkinOption[] getOptions(Category category) {

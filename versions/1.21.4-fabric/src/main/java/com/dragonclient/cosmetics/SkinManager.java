@@ -23,6 +23,10 @@ public class SkinManager {
     private final Map<String, Identifier> customSkins = new HashMap<>();
     private final Map<String, Identifier> customCapes = new HashMap<>();
     private final Map<String, String> skinModels = new HashMap<>();
+    private final Map<String, Path> trackedSkinFiles = new HashMap<>();
+    private final Map<String, String> trackedSkinSignatures = new HashMap<>();
+    private final Map<String, Path> trackedCapeFiles = new HashMap<>();
+    private final Map<String, String> trackedCapeSignatures = new HashMap<>();
     private final Gson gson = new Gson();
     private Path configPath;
     private long lastLoadedAtMs = 0L;
@@ -94,12 +98,16 @@ public class SkinManager {
                 customSkins.clear();
                 customCapes.clear();
                 skinModels.clear();
+                trackedSkinFiles.clear();
+                trackedSkinSignatures.clear();
+                trackedCapeFiles.clear();
+                trackedCapeSignatures.clear();
                 lastConfigMtime = Long.MIN_VALUE;
                 return;
             }
 
             long fileMtime = Files.getLastModifiedTime(configPath).toMillis();
-            if (!force && fileMtime == lastConfigMtime) {
+            if (!force && fileMtime == lastConfigMtime && !dragonclient$trackedTexturesChanged()) {
                 return;
             }
 
@@ -107,9 +115,16 @@ public class SkinManager {
             JsonObject config = gson.fromJson(json, JsonObject.class);
             JsonArray skins = config != null ? config.getAsJsonArray("skins") : null;
 
+            Map<String, Identifier> previousSkins = new HashMap<>(customSkins);
+            Map<String, Identifier> previousCapes = new HashMap<>(customCapes);
             customSkins.clear();
             customCapes.clear();
             skinModels.clear();
+
+            Map<String, Path> nextTrackedSkinFiles = new HashMap<>();
+            Map<String, String> nextTrackedSkinSignatures = new HashMap<>();
+            Map<String, Path> nextTrackedCapeFiles = new HashMap<>();
+            Map<String, String> nextTrackedCapeSignatures = new HashMap<>();
 
             if (skins != null) {
                 for (int i = 0; i < skins.size(); i++) {
@@ -122,7 +137,14 @@ public class SkinManager {
                         String skinPath = skinPathElement.getAsString();
                         Path skinFile = Paths.get(skinPath);
                         if (Files.exists(skinFile)) {
-                            Identifier skinId = loadSkinTexture(key, skinFile);
+                            String signature = dragonclient$buildTextureSignature(skinFile);
+                            nextTrackedSkinFiles.put(key, skinFile);
+                            nextTrackedSkinSignatures.put(key, signature);
+
+                            Identifier skinId = previousSkins.get(key);
+                            if (force || !signature.equals(trackedSkinSignatures.get(key)) || skinId == null) {
+                                skinId = loadSkinTexture(key, skinFile);
+                            }
                             if (skinId != null) {
                                 customSkins.put(key, skinId);
                             }
@@ -135,7 +157,14 @@ public class SkinManager {
                         if (capePath != null && !capePath.trim().isEmpty()) {
                             Path capeFile = Paths.get(capePath);
                             if (Files.exists(capeFile)) {
-                                Identifier capeId = loadCapeTexture(key, capeFile);
+                                String signature = dragonclient$buildTextureSignature(capeFile);
+                                nextTrackedCapeFiles.put(key, capeFile);
+                                nextTrackedCapeSignatures.put(key, signature);
+
+                                Identifier capeId = previousCapes.get(key);
+                                if (force || !signature.equals(trackedCapeSignatures.get(key)) || capeId == null) {
+                                    capeId = loadCapeTexture(key, capeFile);
+                                }
                                 if (capeId != null) {
                                     customCapes.put(key, capeId);
                                 }
@@ -151,11 +180,60 @@ public class SkinManager {
                 }
             }
 
+            trackedSkinFiles.clear();
+            trackedSkinFiles.putAll(nextTrackedSkinFiles);
+            trackedSkinSignatures.clear();
+            trackedSkinSignatures.putAll(nextTrackedSkinSignatures);
+            trackedCapeFiles.clear();
+            trackedCapeFiles.putAll(nextTrackedCapeFiles);
+            trackedCapeSignatures.clear();
+            trackedCapeSignatures.putAll(nextTrackedCapeSignatures);
+
             lastConfigMtime = fileMtime;
             System.out.println("[DragonClient] Loaded " + customSkins.size() + " custom skins and " + customCapes.size() + " custom capes");
         } catch (Exception e) {
             System.err.println("[DragonClient] Failed to load custom skins: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private boolean dragonclient$trackedTexturesChanged() {
+        for (Map.Entry<String, Path> entry : trackedSkinFiles.entrySet()) {
+            String key = entry.getKey();
+            String current = dragonclient$buildTextureSignature(entry.getValue());
+            String previous = trackedSkinSignatures.get(key);
+            if (!current.equals(previous)) {
+                return true;
+            }
+        }
+
+        for (Map.Entry<String, Path> entry : trackedCapeFiles.entrySet()) {
+            String key = entry.getKey();
+            String current = dragonclient$buildTextureSignature(entry.getValue());
+            String previous = trackedCapeSignatures.get(key);
+            if (!current.equals(previous)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static String dragonclient$buildTextureSignature(Path texturePath) {
+        if (texturePath == null) {
+            return "missing";
+        }
+
+        Path normalized = texturePath.toAbsolutePath().normalize();
+        try {
+            if (!Files.exists(normalized)) {
+                return normalized + "|missing";
+            }
+            long mtime = Files.getLastModifiedTime(normalized).toMillis();
+            long size = Files.size(normalized);
+            return normalized + "|" + mtime + "|" + size;
+        } catch (Exception e) {
+            return normalized + "|error";
         }
     }
 
