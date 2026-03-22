@@ -25,8 +25,12 @@ jobs:
       - name: Get version
         id: version
         run: |
-          # Use the version from root.gradle.kts
-          VERSION=$(grep 'version = ' root.gradle.kts | sed 's/version = "\(.*\)"/\1/')
+          # Read the release version from gradle.properties (plain version=x.y.z)
+          VERSION=$(awk -F= '/^version=/{print $2; exit}' gradle.properties | tr -d '[:space:]')
+          if [ -z "$VERSION" ]; then
+            echo "Failed to resolve version from gradle.properties"
+            exit 1
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Using version: $VERSION"
 
@@ -62,9 +66,17 @@ jobs:
       - name: Rename JAR
         run: |
           cd versions/${{ matrix.minecraft }}-fabric/build/libs
+          TARGET="dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar"
           # Only rename if the file doesn't already have the correct name
-          if [ ! -f "dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar" ]; then
-            mv dragon-client-${{ matrix.minecraft }}-*.jar dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar
+          if [ ! -f "$TARGET" ]; then
+            shopt -s nullglob
+            MATCHES=(dragon-client-${{ matrix.minecraft }}-*.jar)
+            if [ ${#MATCHES[@]} -eq 0 ]; then
+              echo "No built jar found for Minecraft ${{ matrix.minecraft }}"
+              ls -la
+              exit 1
+            fi
+            mv "${MATCHES[0]}" "$TARGET"
           fi
       
       - name: Upload artifact
