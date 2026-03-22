@@ -300,12 +300,16 @@ public final class GearSkinManager {
      */
     public static synchronized ItemStack getRenderStackForEntity(ItemStack original, @Nullable Entity holder) {
         if (holder != null) {
-            if (!(holder instanceof PlayerEntity)) {
+            if (dragonclient$isPreviewDummy(holder) || !(holder instanceof PlayerEntity)) {
                 return original;
             }
         }
 
         return getRenderStack(original);
+    }
+
+    private static boolean dragonclient$isPreviewDummy(Entity holder) {
+        return "com.dragonclient.gui.DummyPlayerEntity".equals(holder.getClass().getName());
     }
 
     private static SkinOption[] getOptions(Category category) {
