@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -315,20 +314,11 @@ public final class GearSkinManager {
     }
 
     /**
-     * Owner-aware render replacement.
-     * Local player keeps selected Dragon gear skin, remote entities stay vanilla.
+     * Applies configured Dragon gear skin for player-held items.
      */
     public static synchronized ItemStack getRenderStackForEntity(ItemStack original, @Nullable Entity holder) {
         if (holder != null) {
-            if (holder instanceof PlayerEntity player) {
-                MinecraftClient client = MinecraftClient.getInstance();
-                if (client == null || client.player == null) {
-                    return original;
-                }
-                if (!player.getUuid().equals(client.player.getUuid())) {
-                    return original;
-                }
-            } else {
+            if (!(holder instanceof PlayerEntity)) {
                 return original;
             }
         }

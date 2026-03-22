@@ -1,5 +1,6 @@
 package com.dragonclient.mixin;
 
+import com.dragonclient.cosmetics.SkinManager;
 import com.dragonclient.module.visual.NametagModule;
 import com.dragonclient.module.visual.TierTaggerModule;
 import com.dragonclient.util.TierTagManager;
@@ -24,6 +25,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Mixin(PlayerEntityRenderer.class)
 public class MixinPlayerEntityRendererNameTag {
@@ -31,10 +34,10 @@ public class MixinPlayerEntityRendererNameTag {
         Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final float DRAGONCLIENT_NAME_TAG_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 6.0f;
-    private static final int DRAGONCLIENT_STAR_PADDING_SPACES = 2;
     private static final float DRAGONCLIENT_TIER_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_TIER_ICON_HEIGHT = 6.0f;
-    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.25f;
+    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.5f;
+    private static final Map<Integer, String> DRAGONCLIENT_PLAYER_NAMES = new ConcurrentHashMap<>();
 
     private boolean dragonclient$shouldForceNameTag(Entity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -46,9 +49,35 @@ public class MixinPlayerEntityRendererNameTag {
         return client != null && client.player != null && state.id == client.player.getId();
     }
 
-    private Text dragonclient$withStarPadding(Text name) {
-        // Reserve space so the textured star can render between tier and name.
-        return Text.literal(" ".repeat(DRAGONCLIENT_STAR_PADDING_SPACES)).append(name.copy());
+    private String dragonclient$getTierForDisplay(String playerName) {
+        if (playerName == null || playerName.isBlank() || !TierTaggerModule.enabled) {
+            return null;
+        }
+
+        String tier = TierTagManager.getTierForPlayer(playerName);
+        if (tier != null && !tier.isBlank()) {
+            return tier;
+        }
+
+        SkinManager skinManager = SkinManager.getInstance();
+        if (skinManager.hasCustomSkin(playerName) || skinManager.hasCustomCape(playerName)) {
+            return "HT1";
+        }
+
+        return null;
+    }
+
+    private boolean dragonclient$shouldShowDecorations(String playerName) {
+        if (playerName == null || playerName.isBlank()) {
+            return false;
+        }
+
+        if (dragonclient$getTierForDisplay(playerName) != null) {
+            return true;
+        }
+
+        SkinManager skinManager = SkinManager.getInstance();
+        return skinManager.hasCustomSkin(playerName) || skinManager.hasCustomCape(playerName);
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
@@ -103,8 +132,11 @@ public class MixinPlayerEntityRendererNameTag {
             return;
         }
 
+        String playerName = entity.getName().getString();
+        DRAGONCLIENT_PLAYER_NAMES.put(playerState.id, playerName);
+
         Text baseName = entity.getDisplayName().copy();
-        Text decoratedName = TierTagManager.decorateName(baseName, entity.getName().getString());
+        Text decoratedName = TierTagManager.decorateName(baseName.copy(), playerName);
         if (TierTaggerModule.enabled) {
             state.displayName = null;
             playerState.playerName = decoratedName.copy();
@@ -114,12 +146,9 @@ public class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        state.displayName = null;
+        state.displayName = TierTagManager.decorateName(baseName, playerName);
         state.nameLabelPos = new Vec3d(0.0, entity.getHeight() + 0.2, 0.0);
-        playerState.playerName = TierTagManager.decorateName(
-            dragonclient$withStarPadding(baseName),
-            entity.getName().getString()
-        );
+        playerState.playerName = null;
     }
 
     @Inject(
@@ -134,24 +163,29 @@ public class MixinPlayerEntityRendererNameTag {
         CameraRenderState cameraState,
         CallbackInfo ci
     ) {
-        if (!dragonclient$shouldRenderOwnNameTag(state) || state.playerName == null || state.nameLabelPos == null) {
+        String playerName = DRAGONCLIENT_PLAYER_NAMES.get(state.id);
+        boolean forceSelf = dragonclient$shouldRenderOwnNameTag(state);
+        if (!forceSelf && !dragonclient$shouldShowDecorations(playerName)) {
+            return;
+        }
+
+        Text labelText = state.playerName != null
+            ? state.playerName
+            : (playerName != null && !playerName.isBlank() ? Text.literal(playerName) : null);
+        if (labelText == null || state.nameLabelPos == null) {
             return;
         }
 
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.textRenderer == null || client.player == null) {
+        if (client == null || client.textRenderer == null) {
             return;
         }
 
-        String tier = TierTagManager.getTierForPlayer(client.player.getName().getString());
-        float fullWidth = client.textRenderer.getWidth(state.playerName);
-        float nameOnlyWidth = client.textRenderer.getWidth(client.player.getName());
+        String tier = dragonclient$getTierForDisplay(playerName);
+        float fullWidth = client.textRenderer.getWidth(labelText);
         float textLeft = -fullWidth / 2.0f;
-        float nameLeft = textLeft + (fullWidth - nameOnlyWidth);
-        float reservedWidth = client.textRenderer.getWidth(" ") * DRAGONCLIENT_STAR_PADDING_SPACES;
-        float tierEnd = nameLeft - reservedWidth;
-        float iconLeft = tierEnd + ((reservedWidth - DRAGONCLIENT_NAME_TAG_ICON_WIDTH) * 0.5f);
-        float tierIconLeft = textLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
+        float starLeft = textLeft - DRAGONCLIENT_NAME_TAG_ICON_WIDTH - 1.5f;
+        float tierIconLeft = starLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
         float iconTop = 1.0f;
 
         matrices.push();
@@ -197,7 +231,7 @@ public class MixinPlayerEntityRendererNameTag {
             (entry, vertexConsumer) -> dragonclient$drawIcon(
                 entry,
                 vertexConsumer,
-                iconLeft,
+                starLeft,
                 iconTop,
                 DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
                 DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
@@ -211,7 +245,7 @@ public class MixinPlayerEntityRendererNameTag {
             (entry, vertexConsumer) -> dragonclient$drawIcon(
                 entry,
                 vertexConsumer,
-                iconLeft,
+                starLeft,
                 iconTop,
                 DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
                 DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,

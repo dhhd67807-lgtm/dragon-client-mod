@@ -1,5 +1,6 @@
 package com.dragonclient.mixin;
 
+import com.dragonclient.cosmetics.SkinManager;
 import com.dragonclient.module.visual.NametagModule;
 import com.dragonclient.module.visual.TierTaggerModule;
 import com.dragonclient.util.TierTagManager;
@@ -24,6 +25,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Mixin(PlayerEntityRenderer.class)
 public class MixinPlayerEntityRendererNameTag {
@@ -31,14 +34,50 @@ public class MixinPlayerEntityRendererNameTag {
         Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final float DRAGONCLIENT_NAME_TAG_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 6.0f;
-    private static final int DRAGONCLIENT_STAR_PADDING_SPACES = 2;
     private static final float DRAGONCLIENT_TIER_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_TIER_ICON_HEIGHT = 6.0f;
-    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.25f;
+    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.5f;
+    private static final Map<Integer, String> DRAGONCLIENT_PLAYER_NAMES = new ConcurrentHashMap<>();
 
     private boolean dragonclient$shouldForceNameTag(Entity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
         return NametagModule.enabled && entity instanceof PlayerEntity && client != null && entity == client.player;
+    }
+
+    private boolean dragonclient$shouldRenderOwnNameTag(PlayerEntityRenderState state) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        return client != null && client.player != null && state.id == client.player.getId();
+    }
+
+    private String dragonclient$getTierForDisplay(String playerName) {
+        if (playerName == null || playerName.isBlank() || !TierTaggerModule.enabled) {
+            return null;
+        }
+
+        String tier = TierTagManager.getTierForPlayer(playerName);
+        if (tier != null && !tier.isBlank()) {
+            return tier;
+        }
+
+        SkinManager skinManager = SkinManager.getInstance();
+        if (skinManager.hasCustomSkin(playerName) || skinManager.hasCustomCape(playerName)) {
+            return "HT1";
+        }
+
+        return null;
+    }
+
+    private boolean dragonclient$shouldShowDecorations(String playerName) {
+        if (playerName == null || playerName.isBlank()) {
+            return false;
+        }
+
+        if (dragonclient$getTierForDisplay(playerName) != null) {
+            return true;
+        }
+
+        SkinManager skinManager = SkinManager.getInstance();
+        return skinManager.hasCustomSkin(playerName) || skinManager.hasCustomCape(playerName);
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
@@ -55,15 +94,6 @@ public class MixinPlayerEntityRendererNameTag {
         }
     }
 
-    private boolean dragonclient$shouldRenderOwnNameTag(PlayerEntityRenderState state) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        return client != null && client.player != null && state.id == client.player.getId();
-    }
-
-    private Text dragonclient$withStarPadding(Text name) {
-        return Text.literal(" ".repeat(DRAGONCLIENT_STAR_PADDING_SPACES)).append(name.copy());
-    }
-
     @Inject(
         method = "updateRenderState(Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;F)V",
         at = @At("TAIL"),
@@ -75,8 +105,11 @@ public class MixinPlayerEntityRendererNameTag {
         float tickDelta,
         CallbackInfo ci
     ) {
-        Text baseName = entity.getName().copy();
-        Text decoratedName = TierTagManager.decorateName(baseName.copy(), entity.getName().getString());
+        String playerName = entity.getName().getString();
+        DRAGONCLIENT_PLAYER_NAMES.put(state.id, playerName);
+
+        Text baseName = entity.getDisplayName().copy();
+        Text decoratedName = TierTagManager.decorateName(baseName.copy(), playerName);
         if (TierTaggerModule.enabled) {
             state.displayName = null;
             state.playerName = decoratedName.copy();
@@ -86,7 +119,7 @@ public class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        state.displayName = TierTagManager.decorateName(dragonclient$withStarPadding(baseName), entity.getName().getString());
+        state.displayName = TierTagManager.decorateName(baseName, playerName);
         state.nameLabelPos = new Vec3d(0.0, entity.getHeight() + 0.2, 0.0);
         state.playerName = null;
     }
@@ -104,29 +137,31 @@ public class MixinPlayerEntityRendererNameTag {
         int light,
         CallbackInfo ci
     ) {
-        if (!dragonclient$shouldRenderOwnNameTag(state) || text == null) {
+        String playerName = DRAGONCLIENT_PLAYER_NAMES.get(state.id);
+        boolean forceSelf = dragonclient$shouldRenderOwnNameTag(state);
+        if (text == null || (!forceSelf && !dragonclient$shouldShowDecorations(playerName))) {
             return;
         }
 
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.textRenderer == null || client.player == null) {
+        if (client == null || client.textRenderer == null) {
             return;
         }
 
-        String tier = TierTagManager.getTierForPlayer(client.player.getName().getString());
+        String tier = dragonclient$getTierForDisplay(playerName);
         float fullWidth = client.textRenderer.getWidth(text);
-        float nameOnlyWidth = client.textRenderer.getWidth(client.player.getName());
         float textLeft = -fullWidth / 2.0f;
-        float nameLeft = textLeft + (fullWidth - nameOnlyWidth);
-        float reservedWidth = client.textRenderer.getWidth(" ") * DRAGONCLIENT_STAR_PADDING_SPACES;
-        float tierEnd = nameLeft - reservedWidth;
-        float iconLeft = tierEnd + ((reservedWidth - DRAGONCLIENT_NAME_TAG_ICON_WIDTH) * 0.5f);
-        float tierIconLeft = textLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
+        float starLeft = textLeft - DRAGONCLIENT_NAME_TAG_ICON_WIDTH - 1.5f;
+        float tierIconLeft = starLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
         float iconTop = 1.0f;
         int litLight = LightmapTextureManager.applyEmission(light, 2);
-        boolean pushedTransform = false;
+
         MatrixStack.Entry entry = matrices.peek();
+        boolean pushedTransform = false;
         if (!dragonclient$isLabelSpace(entry)) {
+            if (state.nameLabelPos == null) {
+                return;
+            }
             matrices.push();
             matrices.translate(state.nameLabelPos.x, state.nameLabelPos.y + 0.5, state.nameLabelPos.z);
             matrices.multiply(client.getEntityRenderDispatcher().getRotation());
@@ -166,7 +201,7 @@ public class MixinPlayerEntityRendererNameTag {
         dragonclient$drawIcon(
             entry,
             seeThrough,
-            iconLeft,
+            starLeft,
             iconTop,
             DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
             DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
@@ -178,7 +213,7 @@ public class MixinPlayerEntityRendererNameTag {
         dragonclient$drawIcon(
             entry,
             normal,
-            iconLeft,
+            starLeft,
             iconTop,
             DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
             DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
@@ -193,7 +228,7 @@ public class MixinPlayerEntityRendererNameTag {
 
     private static boolean dragonclient$isLabelSpace(MatrixStack.Entry entry) {
         var matrix = entry.getPositionMatrix();
-        float sx = (float)Math.sqrt(matrix.m00() * matrix.m00() + matrix.m01() * matrix.m01() + matrix.m02() * matrix.m02());
+        float sx = (float) Math.sqrt(matrix.m00() * matrix.m00() + matrix.m01() * matrix.m01() + matrix.m02() * matrix.m02());
         return sx < 0.1f;
     }
 

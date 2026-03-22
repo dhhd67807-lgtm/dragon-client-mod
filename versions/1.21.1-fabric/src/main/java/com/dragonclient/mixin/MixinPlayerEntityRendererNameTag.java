@@ -1,6 +1,8 @@
 package com.dragonclient.mixin;
 
+import com.dragonclient.cosmetics.SkinManager;
 import com.dragonclient.module.visual.NametagModule;
+import com.dragonclient.module.visual.TierTaggerModule;
 import com.dragonclient.util.TierTagManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
@@ -28,10 +30,9 @@ public abstract class MixinPlayerEntityRendererNameTag {
         Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final float DRAGONCLIENT_NAME_TAG_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 6.0f;
-    private static final int DRAGONCLIENT_STAR_PADDING_SPACES = 2;
     private static final float DRAGONCLIENT_TIER_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_TIER_ICON_HEIGHT = 6.0f;
-    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.25f;
+    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.5f;
 
     @Shadow
     protected abstract void renderLabelIfPresent(
@@ -48,8 +49,35 @@ public abstract class MixinPlayerEntityRendererNameTag {
         return NametagModule.enabled && entity instanceof PlayerEntity && client != null && entity == client.player;
     }
 
-    private Text dragonclient$withStarPadding(Text name) {
-        return Text.literal(" ".repeat(DRAGONCLIENT_STAR_PADDING_SPACES)).append(name.copy());
+    private String dragonclient$getTierForDisplay(String playerName) {
+        if (playerName == null || playerName.isBlank() || !TierTaggerModule.enabled) {
+            return null;
+        }
+
+        String tier = TierTagManager.getTierForPlayer(playerName);
+        if (tier != null && !tier.isBlank()) {
+            return tier;
+        }
+
+        SkinManager skinManager = SkinManager.getInstance();
+        if (skinManager.hasCustomSkin(playerName) || skinManager.hasCustomCape(playerName)) {
+            return "HT1";
+        }
+
+        return null;
+    }
+
+    private boolean dragonclient$shouldShowDecorations(String playerName) {
+        if (playerName == null || playerName.isBlank()) {
+            return false;
+        }
+
+        if (dragonclient$getTierForDisplay(playerName) != null) {
+            return true;
+        }
+
+        SkinManager skinManager = SkinManager.getInstance();
+        return skinManager.hasCustomSkin(playerName) || skinManager.hasCustomCape(playerName);
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
@@ -84,8 +112,8 @@ public abstract class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        Text baseName = player.getName().copy();
-        Text decoratedName = TierTagManager.decorateName(dragonclient$withStarPadding(baseName), player.getName().getString());
+        String playerName = player.getName().getString();
+        Text decoratedName = TierTagManager.decorateName(player.getName().copy(), playerName);
         this.renderLabelIfPresent(player, decoratedName, matrices, vertexConsumers, light, tickDelta);
     }
 
@@ -103,7 +131,8 @@ public abstract class MixinPlayerEntityRendererNameTag {
         float tickDelta,
         CallbackInfo ci
     ) {
-        if (!dragonclient$shouldForceNameTag(player) || text == null) {
+        String playerName = player.getName().getString();
+        if (text == null || (!dragonclient$shouldForceNameTag(player) && !dragonclient$shouldShowDecorations(playerName))) {
             return;
         }
 
@@ -112,20 +141,16 @@ public abstract class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        String playerName = player.getName().getString();
-        String tier = TierTagManager.getTierForPlayer(playerName);
+        String tier = dragonclient$getTierForDisplay(playerName);
         float fullWidth = client.textRenderer.getWidth(text);
-        float nameOnlyWidth = client.textRenderer.getWidth(player.getName());
         float textLeft = -fullWidth / 2.0f;
-        float nameLeft = textLeft + (fullWidth - nameOnlyWidth);
-        float reservedWidth = client.textRenderer.getWidth(" ") * DRAGONCLIENT_STAR_PADDING_SPACES;
-        float tierEnd = nameLeft - reservedWidth;
-        float iconLeft = tierEnd + ((reservedWidth - DRAGONCLIENT_NAME_TAG_ICON_WIDTH) * 0.5f);
-        float tierIconLeft = textLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
+        float starLeft = textLeft - DRAGONCLIENT_NAME_TAG_ICON_WIDTH - 1.5f;
+        float tierIconLeft = starLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
         float iconTop = 1.0f;
         int litLight = light;
         boolean pushedTransform = false;
         MatrixStack.Entry entry = matrices.peek();
+
         if (!dragonclient$isLabelSpace(entry)) {
             matrices.push();
             matrices.translate(0.0, player.getHeight() + 0.5, 0.0);
@@ -137,6 +162,7 @@ public abstract class MixinPlayerEntityRendererNameTag {
 
         if (tier != null && !tier.isBlank()) {
             Identifier tierIcon = Identifier.of("dragonclient", "textures/tier_tags/" + tier.toLowerCase(Locale.ROOT) + ".png");
+
             VertexConsumer tierSeeThrough = vertexConsumers.getBuffer(RenderLayer.getTextSeeThrough(tierIcon));
             dragonclient$drawIcon(
                 entry,
@@ -166,7 +192,7 @@ public abstract class MixinPlayerEntityRendererNameTag {
         dragonclient$drawIcon(
             entry,
             seeThrough,
-            iconLeft,
+            starLeft,
             iconTop,
             DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
             DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
@@ -178,7 +204,7 @@ public abstract class MixinPlayerEntityRendererNameTag {
         dragonclient$drawIcon(
             entry,
             normal,
-            iconLeft,
+            starLeft,
             iconTop,
             DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
             DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
@@ -193,7 +219,7 @@ public abstract class MixinPlayerEntityRendererNameTag {
 
     private static boolean dragonclient$isLabelSpace(MatrixStack.Entry entry) {
         var matrix = entry.getPositionMatrix();
-        float sx = (float)Math.sqrt(matrix.m00() * matrix.m00() + matrix.m01() * matrix.m01() + matrix.m02() * matrix.m02());
+        float sx = (float) Math.sqrt(matrix.m00() * matrix.m00() + matrix.m01() * matrix.m01() + matrix.m02() * matrix.m02());
         return sx < 0.1f;
     }
 
