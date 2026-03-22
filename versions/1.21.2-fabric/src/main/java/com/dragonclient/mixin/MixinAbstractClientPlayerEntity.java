@@ -4,36 +4,65 @@ import com.dragonclient.cosmetics.CapeManager;
 import com.dragonclient.cosmetics.SkinManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(AbstractClientPlayerEntity.class)
 public abstract class MixinAbstractClientPlayerEntity {
 
-    @Inject(method = "getSkinTextures", at = @At("RETURN"), cancellable = true, require = 0)
-    private void dragonclient$injectCustomTextures(CallbackInfoReturnable<SkinTextures> cir) {
+    @Shadow
+    @Nullable
+    public abstract PlayerListEntry getPlayerListEntry();
+
+    private static String dragonclient$getLookupName(AbstractClientPlayerEntity player) {
+        if (player != null) {
+            Object profile = player.getGameProfile();
+            if (profile != null) {
+                try {
+                    Object value = profile.getClass().getMethod("name").invoke(profile);
+                    if (value instanceof String s && !s.isBlank()) {
+                        return s;
+                    }
+                } catch (Exception ignored) {
+                }
+                try {
+                    Object value = profile.getClass().getMethod("getName").invoke(profile);
+                    if (value instanceof String s && !s.isBlank()) {
+                        return s;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return player == null ? "" : player.getName().getString();
+    }
+
+    /**
+     * @author DragonClient
+     * @reason Force custom skin/cape application for every player render context.
+     */
+    @Overwrite
+    public SkinTextures getSkinTextures() {
         AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
-        SkinTextures vanilla = cir.getReturnValue();
-        if (vanilla == null) {
-            return;
-        }
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        boolean isLocalPlayer = client != null && player == client.player;
+        PlayerListEntry entry = getPlayerListEntry();
+        SkinTextures vanilla = entry != null
+            ? entry.getSkinTextures()
+            : DefaultSkinHelper.getSkinTextures(player.getGameProfile());
 
-        String playerName = player.getGameProfile() != null ? player.getGameProfile().getName() : null;
-        if (playerName == null || playerName.isBlank()) {
-            playerName = player.getName().getString();
-        }
-
+        String playerName = dragonclient$getLookupName(player);
         SkinManager skinManager = SkinManager.getInstance();
         Identifier customSkin = skinManager.getCustomSkin(playerName);
         Identifier customCape = skinManager.getCustomCape(playerName);
 
+        MinecraftClient client = MinecraftClient.getInstance();
+        boolean isLocalPlayer = client != null && player == client.player;
         if (customCape == null && isLocalPlayer) {
             CapeManager capeManager = CapeManager.getInstance();
             if (capeManager.hasCapeEquipped()) {
@@ -42,7 +71,7 @@ public abstract class MixinAbstractClientPlayerEntity {
         }
 
         if (customSkin == null && customCape == null) {
-            return;
+            return vanilla;
         }
 
         Identifier skinTexture = customSkin != null ? customSkin : vanilla.texture();
@@ -57,13 +86,13 @@ public abstract class MixinAbstractClientPlayerEntity {
                 : SkinTextures.Model.WIDE;
         }
 
-        cir.setReturnValue(new SkinTextures(
+        return new SkinTextures(
             skinTexture,
             vanilla.textureUrl(),
             capeTexture,
             elytraTexture,
             model,
             vanilla.secure()
-        ));
+        );
     }
 }
