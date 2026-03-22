@@ -2,7 +2,7 @@ plugins {
     id("base")
 }
 
-version = "4.6.4"
+version = (findProperty("version") as String?) ?: "2.7.0"
 
 allprojects {
     group = "com.dragonclient"
