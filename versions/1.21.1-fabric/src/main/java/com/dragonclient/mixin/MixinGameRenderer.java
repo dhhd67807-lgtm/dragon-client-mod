@@ -32,7 +32,7 @@ public class MixinGameRenderer {
         }
 
         // Keep zoom independent from sprint/running dynamic FOV.
-        cir.setReturnValue(Math.max(1.0d, baseFov * ZoomModule.ZOOM_FACTOR));
+        cir.setReturnValue(Math.max(1.0d, baseFov * ZoomModule.getZoomFactor()));
     }
 
     @Inject(method = "renderWorld", at = @At("TAIL"), require = 0)

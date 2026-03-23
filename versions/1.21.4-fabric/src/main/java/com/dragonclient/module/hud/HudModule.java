@@ -6,6 +6,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
 public abstract class HudModule extends Module {
+    public static final int HUD_REFERENCE_GUI_SCALE = 2;
     protected static final float DEFAULT_SCALE = 2.0f;
     protected static final int PANEL_PADDING_X = 8;
     protected static final int PANEL_PADDING_Y = 6;
@@ -123,7 +124,7 @@ public abstract class HudModule extends Module {
             return;
         }
         int scaledWidth = Math.round(contentWidth * getScale());
-        this.x = client.getWindow().getScaledWidth() - scaledWidth - 16;
+        this.x = getReferenceScaledWidth(client) - scaledWidth - 16;
         this.y = topMargin;
     }
 
@@ -147,8 +148,22 @@ public abstract class HudModule extends Module {
         }
         int scaledWidth = Math.round(contentWidth * getScale());
         int scaledHeight = Math.round(contentHeight * getScale());
-        this.x = client.getWindow().getScaledWidth() - scaledWidth - rightMargin;
-        this.y = client.getWindow().getScaledHeight() - scaledHeight - bottomMargin;
+        this.x = getReferenceScaledWidth(client) - scaledWidth - rightMargin;
+        this.y = getReferenceScaledHeight(client) - scaledHeight - bottomMargin;
+    }
+
+    protected static int getReferenceScaledWidth(MinecraftClient client) {
+        if (client == null || client.getWindow() == null) {
+            return 0;
+        }
+        return Math.round((float)(client.getWindow().getFramebufferWidth() / (double)HUD_REFERENCE_GUI_SCALE));
+    }
+
+    protected static int getReferenceScaledHeight(MinecraftClient client) {
+        if (client == null || client.getWindow() == null) {
+            return 0;
+        }
+        return Math.round((float)(client.getWindow().getFramebufferHeight() / (double)HUD_REFERENCE_GUI_SCALE));
     }
 
     protected void drawLiquidGlassTextPanel(DrawContext context, int textWidth, int textHeight) {

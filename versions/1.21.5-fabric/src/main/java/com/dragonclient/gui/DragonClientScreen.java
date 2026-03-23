@@ -319,7 +319,7 @@ public class DragonClientScreen extends Screen {
         
         // Check close button
         int closeX = fixedGuiLeft + GUI_WIDTH - 35;
-        int closeY = fixedGuiTop + 10;
+        int closeY = fixedGuiTop + 15;
         if (mx >= closeX && mx <= closeX + 25 && my >= closeY && my <= closeY + 25) {
             this.close();
             return true;

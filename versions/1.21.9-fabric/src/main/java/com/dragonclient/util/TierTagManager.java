@@ -29,6 +29,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class TierTagManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -43,7 +45,19 @@ public final class TierTagManager {
     private static final String CRACKED_API_KEY_HEADER = "X-TIER-TAGGER-KEY";
     private static final String CRACKED_API_KEY = "TIER-TAGGER-KEY-01";
     private static final String CRACKED_DEFAULT_CATEGORY = "vanilla";
-    private static final String DEFAULT_SELF_TIER = "HT1";
+    private static final List<String> CRACKED_LISTING_CATEGORIES = List.of(
+        "VANILLA",
+        "SWORD",
+        "AXE",
+        "SMP",
+        "UHC",
+        "MACE",
+        "NETHPOT",
+        "DIAPOT"
+    );
+    private static final Pattern MINECRAFT_FORMATTING_PATTERN = Pattern.compile("(?i)\u00A7[0-9A-FK-ORX]");
+    private static final Pattern PLAYER_NAME_TOKEN_PATTERN = Pattern.compile("[A-Za-z0-9_]{1,16}");
+    private static final Pattern TIER_TOKEN_PATTERN = Pattern.compile("(?i)\\b(?:HT|LT)\\s*[-_]?\\s*([1-5])\\b");
 
     private static final List<String> PROFILE_API_URLS = List.of(
         "https://mctiers.com/api/v2/profile/",
@@ -82,29 +96,38 @@ public final class TierTagManager {
     });
 
     private static volatile Path tierTagsPath;
+    private static volatile Path skinsConfigPath;
     private static volatile long lastReloadAttemptMs = 0L;
     private static volatile long lastLoadedMtime = Long.MIN_VALUE;
+    private static volatile long lastSkinsLoadedMtime = Long.MIN_VALUE;
     private static volatile long lastCrackedListingFetchMs = 0L;
     private static volatile boolean crackedListingFetchInFlight = false;
 
     private TierTagManager() {}
 
     public static String getTierForPlayer(String playerName) {
+        return getTierForPlayer(playerName, false);
+    }
+
+    public static String getTierForPlayer(String playerName, boolean crackedPlayer) {
         if (!TierTaggerModule.enabled || playerName == null || playerName.isBlank()) {
             return null;
         }
 
-        String key = playerName.toLowerCase(Locale.ROOT);
-        refreshLocalIfNeeded();
-        scheduleCrackedListingFetchIfNeeded();
-        scheduleRemoteLookupIfNeeded(key, playerName);
-
-        CachedTierResult remote = REMOTE_PLAYER_TIERS.get(key);
-        if (remote != null && remote.tier != null) {
-            return remote.tier;
+        String resolvedPlayerName = sanitizePlayerName(playerName);
+        if (resolvedPlayerName.isEmpty()) {
+            return null;
         }
 
-        String crackedTier = CRACKED_PLAYER_TIERS.get(key);
+        String key = resolvedPlayerName.toLowerCase(Locale.ROOT);
+        String cacheKey = key + (crackedPlayer ? "|cracked" : "|std");
+        refreshLocalIfNeeded();
+        scheduleCrackedListingFetchIfNeeded();
+        scheduleRemoteLookupIfNeeded(cacheKey, resolvedPlayerName, crackedPlayer);
+
+        // Prefer deterministic local/cracked sources first so stale or
+        // over-eager third-party API results can't override them.
+        String crackedTier = resolveCrackedTierFromListing(resolvedPlayerName);
         if (crackedTier != null) {
             return crackedTier;
         }
@@ -113,18 +136,17 @@ public final class TierTagManager {
         if (localTier != null) {
             return localTier;
         }
-
-        // Keep local cracked nametag usable even when external APIs don't return this player.
-        // Optional override in tier_tags.json:
+        // Optional local override in tier_tags.json:
         // {
         //   "players": { "_self": "LT2" }
         // }
-        if (isCurrentPlayer(playerName)) {
-            String selfTier = LOCAL_PLAYER_TIERS.get("_self");
-            if (selfTier != null) {
-                return selfTier;
-            }
-            return DEFAULT_SELF_TIER;
+        if (isCurrentPlayer(resolvedPlayerName) || isCurrentPlayer(playerName)) {
+            return LOCAL_PLAYER_TIERS.get("_self");
+        }
+
+        CachedTierResult remote = REMOTE_PLAYER_TIERS.get(cacheKey);
+        if (remote != null && remote.tier != null) {
+            return remote.tier;
         }
 
         return null;
@@ -162,52 +184,112 @@ public final class TierTagManager {
         }
 
         createTemplateIfMissing();
-        if (!Files.exists(tierTagsPath)) {
-            return;
-        }
-
         try {
-            long mtime = Files.getLastModifiedTime(tierTagsPath).toMillis();
-            if (mtime == lastLoadedMtime) {
+            long tierMtime = Files.exists(tierTagsPath) ? Files.getLastModifiedTime(tierTagsPath).toMillis() : Long.MIN_VALUE;
+            long skinsMtime = (skinsConfigPath != null && Files.exists(skinsConfigPath))
+                ? Files.getLastModifiedTime(skinsConfigPath).toMillis()
+                : Long.MIN_VALUE;
+            if (tierMtime == lastLoadedMtime && skinsMtime == lastSkinsLoadedMtime) {
                 return;
             }
-
-            String raw = Files.readString(tierTagsPath);
-            JsonElement parsed = JsonParser.parseString(raw);
-            if (!parsed.isJsonObject()) {
-                return;
-            }
-
-            JsonObject root = parsed.getAsJsonObject();
-            JsonObject playersObj = root.has("players") && root.get("players").isJsonObject()
-                ? root.getAsJsonObject("players")
-                : root;
 
             Map<String, String> next = new HashMap<>();
-            for (Map.Entry<String, JsonElement> entry : playersObj.entrySet()) {
-                if (entry.getValue() == null || !entry.getValue().isJsonPrimitive()) {
-                    continue;
-                }
-                String tier = normalizeTier(entry.getValue().getAsString());
-                if (tier == null) {
-                    continue;
-                }
-                String username = entry.getKey() == null ? "" : entry.getKey().trim();
-                if (!username.isEmpty()) {
-                    next.put(username.toLowerCase(Locale.ROOT), tier);
+            if (Files.exists(tierTagsPath)) {
+                String raw = Files.readString(tierTagsPath);
+                JsonElement parsed = JsonParser.parseString(raw);
+                if (parsed.isJsonObject()) {
+                    JsonObject root = parsed.getAsJsonObject();
+                    JsonObject playersObj = root.has("players") && root.get("players").isJsonObject()
+                        ? root.getAsJsonObject("players")
+                        : root;
+
+                    for (Map.Entry<String, JsonElement> entry : playersObj.entrySet()) {
+                        if (entry.getValue() == null || !entry.getValue().isJsonPrimitive()) {
+                            continue;
+                        }
+                        String tier = normalizeTier(entry.getValue().getAsString());
+                        if (tier == null) {
+                            continue;
+                        }
+                        String username = entry.getKey() == null ? "" : entry.getKey().trim();
+                        if (!username.isEmpty()) {
+                            next.put(username.toLowerCase(Locale.ROOT), tier);
+                        }
+                    }
                 }
             }
+
+            mergeTiersFromSkinsConfig(next);
+
             LOCAL_PLAYER_TIERS.clear();
             LOCAL_PLAYER_TIERS.putAll(next);
-            lastLoadedMtime = mtime;
+            lastLoadedMtime = tierMtime;
+            lastSkinsLoadedMtime = skinsMtime;
         } catch (Exception e) {
             System.err.println("[DragonClient] Failed to load tier_tags.json: " + e.getMessage());
         }
     }
 
-    private static void scheduleRemoteLookupIfNeeded(String key, String playerName) {
+    private static void mergeTiersFromSkinsConfig(Map<String, String> into) {
+        if (into == null || skinsConfigPath == null || !Files.exists(skinsConfigPath)) {
+            return;
+        }
+
+        try {
+            JsonElement parsed = JsonParser.parseString(Files.readString(skinsConfigPath));
+            if (parsed == null || !parsed.isJsonObject()) {
+                return;
+            }
+
+            JsonArray skins = parsed.getAsJsonObject().getAsJsonArray("skins");
+            if (skins == null) {
+                return;
+            }
+
+            for (JsonElement element : skins) {
+                if (element == null || !element.isJsonObject()) {
+                    continue;
+                }
+
+                JsonObject skinObj = element.getAsJsonObject();
+                String username = sanitizePlayerName(asString(skinObj, "player_name"));
+                if (username.isEmpty()) {
+                    continue;
+                }
+
+                String tier = firstNormalizedTier(
+                    asString(skinObj, "tier"),
+                    asString(skinObj, "tier_tag"),
+                    asString(skinObj, "tierTag"),
+                    asString(skinObj, "tiertag"),
+                    asString(skinObj, "rank")
+                );
+                if (tier == null) {
+                    continue;
+                }
+
+                into.putIfAbsent(username.toLowerCase(Locale.ROOT), tier);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static String firstNormalizedTier(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            String tier = normalizeTier(value);
+            if (tier != null) {
+                return tier;
+            }
+        }
+        return null;
+    }
+
+    private static void scheduleRemoteLookupIfNeeded(String cacheKey, String playerName, boolean crackedPlayer) {
         long now = System.currentTimeMillis();
-        CachedTierResult cached = REMOTE_PLAYER_TIERS.get(key);
+        CachedTierResult cached = REMOTE_PLAYER_TIERS.get(cacheKey);
 
         if (cached != null) {
             long age = now - cached.fetchedAtMs;
@@ -219,34 +301,44 @@ public final class TierTagManager {
             }
         }
 
-        if (!LOOKUPS_IN_FLIGHT.add(key)) {
+        if (!LOOKUPS_IN_FLIGHT.add(cacheKey)) {
             return;
         }
 
         LOOKUP_EXECUTOR.execute(() -> {
             try {
-                String tier = fetchRemoteTier(playerName);
-                REMOTE_PLAYER_TIERS.put(key, new CachedTierResult(tier, System.currentTimeMillis(), tier != null));
+                String tier = fetchRemoteTier(playerName, crackedPlayer);
+                REMOTE_PLAYER_TIERS.put(cacheKey, new CachedTierResult(tier, System.currentTimeMillis(), tier != null));
                 if (REMOTE_PLAYER_TIERS.size() > MAX_REMOTE_CACHE_SIZE) {
                     REMOTE_PLAYER_TIERS.clear();
                 }
             } catch (Exception ignored) {
-                REMOTE_PLAYER_TIERS.put(key, new CachedTierResult(null, System.currentTimeMillis(), false));
+                REMOTE_PLAYER_TIERS.put(cacheKey, new CachedTierResult(null, System.currentTimeMillis(), false));
             } finally {
-                LOOKUPS_IN_FLIGHT.remove(key);
+                LOOKUPS_IN_FLIGHT.remove(cacheKey);
             }
         });
     }
 
-    private static String fetchRemoteTier(String playerName) {
+    private static String fetchRemoteTier(String playerName, boolean crackedPlayer) {
         String cleanName = sanitizePlayerName(playerName);
         if (cleanName.isEmpty()) {
             return null;
         }
 
+        String lowerName = cleanName.toLowerCase(Locale.ROOT);
+        String crackedListedTier = resolveCrackedTierFromListing(cleanName);
+        if (crackedListedTier != null) {
+            return crackedListedTier;
+        }
+
         String crackedInfoTier = fetchCrackedInfoTier(cleanName);
         if (crackedInfoTier != null) {
             return crackedInfoTier;
+        }
+
+        if (crackedPlayer) {
+            return null;
         }
 
         List<String> identifiers = new ArrayList<>();
@@ -277,7 +369,11 @@ public final class TierTagManager {
             }
         }
 
-        return null;
+        String fallbackCrackedTier = resolveCrackedTierFromListing(cleanName);
+        if (fallbackCrackedTier != null) {
+            return fallbackCrackedTier;
+        }
+        return CRACKED_PLAYER_TIERS.get(lowerName);
     }
 
     private static void scheduleCrackedListingFetchIfNeeded() {
@@ -292,8 +388,8 @@ public final class TierTagManager {
 
         LOOKUP_EXECUTOR.execute(() -> {
             try {
-                Map<String, String> latest = fetchCrackedListing(CRACKED_DEFAULT_CATEGORY);
-                if (latest != null) {
+                Map<String, String> latest = fetchMergedCrackedListings();
+                if (latest != null && !latest.isEmpty()) {
                     CRACKED_PLAYER_TIERS.clear();
                     CRACKED_PLAYER_TIERS.putAll(latest);
                 }
@@ -385,6 +481,30 @@ public final class TierTagManager {
         return next;
     }
 
+    private static Map<String, String> fetchMergedCrackedListings() {
+        Map<String, String> merged = new HashMap<>();
+        for (String category : CRACKED_LISTING_CATEGORIES) {
+            Map<String, String> listing = fetchCrackedListing(category);
+            if (listing == null || listing.isEmpty()) {
+                continue;
+            }
+
+            for (Map.Entry<String, String> entry : listing.entrySet()) {
+                String username = entry.getKey();
+                String tier = entry.getValue();
+                if (username == null || username.isBlank() || tier == null || tier.isBlank()) {
+                    continue;
+                }
+
+                String existing = merged.get(username);
+                if (existing == null || scoreFromTier(tier) < scoreFromTier(existing)) {
+                    merged.put(username, tier);
+                }
+            }
+        }
+        return merged;
+    }
+
     private static String resolveTierFromEndpoint(String endpoint) {
         JsonElement data = fetchJson(endpoint);
         if (data == null) {
@@ -449,11 +569,7 @@ public final class TierTagManager {
 
         int pos = parsePos(obj);
         if (pos == Integer.MIN_VALUE) {
-            if (looksLikeRankingObject(obj)) {
-                pos = 0;
-            } else {
-                return null;
-            }
+            return null;
         }
 
         String tier = normalizeTier((pos <= 0 ? "HT" : "LT") + tierNumber);
@@ -652,12 +768,85 @@ public final class TierTagManager {
     }
 
     private static String sanitizePlayerName(String playerName) {
-        String cleaned = playerName == null ? "" : playerName.trim();
+        if (playerName == null) {
+            return "";
+        }
+
+        String cleaned = MINECRAFT_FORMATTING_PATTERN.matcher(playerName).replaceAll("").trim();
+        if (cleaned.isEmpty()) {
+            return "";
+        }
+
+        String bestMatch = "";
+        Matcher matcher = PLAYER_NAME_TOKEN_PATTERN.matcher(cleaned);
+        while (matcher.find()) {
+            String token = matcher.group();
+            if (!token.isEmpty()) {
+                bestMatch = token;
+            }
+        }
+        if (!bestMatch.isEmpty()) {
+            return bestMatch;
+        }
+
         cleaned = cleaned.replaceAll("[^A-Za-z0-9_]", "");
         if (cleaned.length() > 16) {
-            cleaned = cleaned.substring(0, 16);
+            cleaned = cleaned.substring(cleaned.length() - 16);
         }
         return cleaned;
+    }
+
+    private static String normalizeLookupKey(String rawPlayerName) {
+        if (rawPlayerName == null) {
+            return "";
+        }
+
+        String cleaned = sanitizePlayerName(rawPlayerName);
+        if (cleaned.isEmpty()) {
+            cleaned = rawPlayerName.trim().replaceAll("[^A-Za-z0-9_]", "");
+        }
+
+        if (cleaned.length() > 16) {
+            cleaned = cleaned.substring(cleaned.length() - 16);
+        }
+        return cleaned.toLowerCase(Locale.ROOT);
+    }
+
+    private static String resolveCrackedTierFromListing(String playerName) {
+        if (playerName == null || playerName.isBlank() || CRACKED_PLAYER_TIERS.isEmpty()) {
+            return null;
+        }
+
+        String lookupKey = normalizeLookupKey(playerName);
+        if (lookupKey.isEmpty()) {
+            return null;
+        }
+
+        String direct = CRACKED_PLAYER_TIERS.get(lookupKey);
+        if (direct != null) {
+            return direct;
+        }
+
+        String lookupCompact = lookupKey.replace("_", "");
+        for (Map.Entry<String, String> entry : CRACKED_PLAYER_TIERS.entrySet()) {
+            String listedName = entry.getKey();
+            if (listedName == null || listedName.isEmpty()) {
+                continue;
+            }
+
+            if (lookupKey.endsWith(listedName) || listedName.endsWith(lookupKey)) {
+                return entry.getValue();
+            }
+
+            String listedCompact = listedName.replace("_", "");
+            if (!lookupCompact.isEmpty()
+                && !listedCompact.isEmpty()
+                && (lookupCompact.endsWith(listedCompact) || listedCompact.endsWith(lookupCompact))) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
     }
 
     private static boolean isCurrentPlayer(String playerName) {
@@ -686,6 +875,7 @@ public final class TierTagManager {
                 ? runDir.getParent().getParent()
                 : runDir;
             tierTagsPath = lapetusDir.resolve("DragonSkins").resolve("tier_tags.json");
+            skinsConfigPath = lapetusDir.resolve("DragonSkins").resolve("skins.json");
             return true;
         } catch (Exception e) {
             System.err.println("[DragonClient] Failed to initialize tier tag path: " + e.getMessage());
@@ -779,6 +969,20 @@ public final class TierTagManager {
         }
 
         return null;
+    }
+
+    public static String extractTierFromText(String rawText) {
+        if (rawText == null || rawText.isBlank()) {
+            return null;
+        }
+
+        Matcher matcher = TIER_TOKEN_PATTERN.matcher(rawText);
+        if (!matcher.find()) {
+            return null;
+        }
+
+        String token = matcher.group();
+        return normalizeTier(token);
     }
 
     private static final class CachedTierResult {

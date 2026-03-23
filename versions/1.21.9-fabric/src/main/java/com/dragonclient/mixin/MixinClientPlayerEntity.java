@@ -4,6 +4,8 @@ import com.dragonclient.DragonClientMod;
 import com.dragonclient.module.movement.NoFallModule;
 import com.dragonclient.module.movement.SprintModule;
 import com.dragonclient.module.player.AutoRespawnModule;
+import com.dragonclient.module.visual.ClearWaterModule;
+import com.dragonclient.module.visual.FullbrightModule;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DeathScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -11,6 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ClientPlayerEntity.class)
 public class MixinClientPlayerEntity {
@@ -41,6 +44,15 @@ public class MixinClientPlayerEntity {
                 client.player.requestRespawn();
                 client.setScreen(null);
             }
+        }
+
+        FullbrightModule.tick();
+    }
+
+    @Inject(method = "getUnderwaterVisibility", at = @At("HEAD"), cancellable = true, require = 0)
+    private void dragonclient$boostUnderwaterVisibility(CallbackInfoReturnable<Float> cir) {
+        if (ClearWaterModule.enabled) {
+            cir.setReturnValue(1.0f);
         }
     }
 }

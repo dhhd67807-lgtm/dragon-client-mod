@@ -18,11 +18,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class GearSkinManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_DIR = Paths.get(System.getProperty("user.home"), ".dragonclient");
     private static final Path CONFIG_FILE = CONFIG_DIR.resolve("gear_skins.json");
+    private static final float REDUCED_IN_HAND_SCALE = 0.82f;
 
     public enum Category {
         SWORD("SWORDS", "Applies to all sword tiers"),
@@ -59,6 +62,7 @@ public final class GearSkinManager {
     private static final class CategoryState {
         boolean enabled;
         int selectedIndex;
+        final Set<Integer> reducedInHand = new HashSet<>();
     }
 
     private static final EnumMap<Category, CategoryState> STATES = new EnumMap<>(Category.class);
@@ -138,6 +142,20 @@ public final class GearSkinManager {
                         int size = getOptions(category).length;
                         state.selectedIndex = size == 0 ? 0 : Math.floorMod(selected, size);
                     }
+                    if (obj.has("reducedInHand")) {
+                        JsonObject reducedInHand = obj.getAsJsonObject("reducedInHand");
+                        int size = getOptions(category).length;
+                        if (reducedInHand != null && size > 0) {
+                            for (String key : reducedInHand.keySet()) {
+                                try {
+                                    if (reducedInHand.get(key).getAsBoolean()) {
+                                        state.reducedInHand.add(Math.floorMod(Integer.parseInt(key), size));
+                                    }
+                                } catch (Exception ignored) {
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
@@ -157,6 +175,11 @@ public final class GearSkinManager {
                 JsonObject obj = new JsonObject();
                 obj.addProperty("enabled", state.enabled);
                 obj.addProperty("selectedIndex", state.selectedIndex);
+                JsonObject reducedInHand = new JsonObject();
+                for (Integer index : state.reducedInHand) {
+                    reducedInHand.addProperty(String.valueOf(index), true);
+                }
+                obj.add("reducedInHand", reducedInHand);
                 root.add(category.name(), obj);
             }
 
@@ -185,6 +208,35 @@ public final class GearSkinManager {
         load();
         CategoryState state = STATES.get(category);
         state.enabled = enabled;
+        save();
+    }
+
+    public static synchronized boolean isReducedInHand(Category category, int index) {
+        load();
+        SkinOption[] options = getOptions(category);
+        if (options.length == 0) {
+            return false;
+        }
+
+        int safeIndex = Math.floorMod(index, options.length);
+        CategoryState state = STATES.get(category);
+        return state != null && state.reducedInHand.contains(safeIndex);
+    }
+
+    public static synchronized void toggleReducedInHand(Category category, int index) {
+        load();
+        SkinOption[] options = getOptions(category);
+        if (options.length == 0) {
+            return;
+        }
+
+        int safeIndex = Math.floorMod(index, options.length);
+        CategoryState state = STATES.get(category);
+        if (state.reducedInHand.contains(safeIndex)) {
+            state.reducedInHand.remove(safeIndex);
+        } else {
+            state.reducedInHand.add(safeIndex);
+        }
         save();
     }
 
@@ -293,6 +345,31 @@ public final class GearSkinManager {
         } catch (Exception e) {
             return original;
         }
+    }
+
+    public static synchronized float getInHandScale(ItemStack original) {
+        load();
+        if (original == null || original.isEmpty()) {
+            return 1.0f;
+        }
+
+        Category category = resolveCategory(original);
+        if (category == null) {
+            return 1.0f;
+        }
+
+        CategoryState state = STATES.get(category);
+        if (state == null || !state.enabled) {
+            return 1.0f;
+        }
+
+        SkinOption[] options = getOptions(category);
+        if (options.length == 0) {
+            return 1.0f;
+        }
+
+        int selectedIndex = Math.floorMod(state.selectedIndex, options.length);
+        return state.reducedInHand.contains(selectedIndex) ? REDUCED_IN_HAND_SCALE : 1.0f;
     }
 
     /**

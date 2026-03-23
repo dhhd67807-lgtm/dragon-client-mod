@@ -3,6 +3,7 @@ package com.dragonclient.gui;
 import com.dragonclient.DragonClientMod;
 import com.dragonclient.module.Module;
 import com.dragonclient.module.ModuleCategory;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
@@ -284,6 +285,11 @@ public class DragonClientScreen extends Screen {
                           texture, x, y, 0f, 0f, width, height, width, height, color);
     }
 
+    @Override
+    public boolean mouseClicked(Click click, boolean dblClick) {
+        return mouseClicked(click.x(), click.y(), click.button());
+    }
+
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         MinecraftClient client = MinecraftClient.getInstance();
         double currentScale = client.getWindow().getScaleFactor();
@@ -301,7 +307,7 @@ public class DragonClientScreen extends Screen {
         
         // Check close button
         int closeX = fixedGuiLeft + GUI_WIDTH - 35;
-        int closeY = fixedGuiTop + 10;
+        int closeY = fixedGuiTop + 15;
         if (mx >= closeX && mx <= closeX + 25 && my >= closeY && my <= closeY + 25) {
             this.close();
             return true;

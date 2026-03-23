@@ -39,6 +39,7 @@ public class MixinPlayerEntityRendererNameTag {
     private static final float DRAGONCLIENT_TIER_ICON_HEIGHT = 6.0f;
     private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.5f;
     private static final Map<Integer, String> DRAGONCLIENT_PLAYER_NAMES = new ConcurrentHashMap<>();
+    private static final Map<Integer, Boolean> DRAGONCLIENT_PLAYER_CRACKED = new ConcurrentHashMap<>();
 
     private boolean dragonclient$shouldForceNameTag(Entity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -50,30 +51,84 @@ public class MixinPlayerEntityRendererNameTag {
         return client != null && client.player != null && state.id == client.player.getId();
     }
 
-    private String dragonclient$getTierForDisplay(String playerName) {
-        if (playerName == null || playerName.isBlank() || !TierTaggerModule.enabled) {
+    private static boolean dragonclient$isLikelyCracked(PlayerEntity player) {
+        if (player == null) {
+            return false;
+        }
+        try {
+            return player.getUuid().version() == 3;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static String dragonclient$resolveLookupName(Entity entity) {
+        if (entity instanceof PlayerEntity playerEntity) {
+            try {
+                Object gameProfile = playerEntity.getGameProfile();
+                if (gameProfile != null) {
+                    String profileName = dragonclient$extractProfileName(gameProfile);
+                    if (profileName != null && !profileName.isBlank()) {
+                        return profileName;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        return entity != null ? entity.getName().getString() : null;
+    }
+
+    private static String dragonclient$extractProfileName(Object gameProfile) {
+        if (gameProfile == null) {
             return null;
         }
 
-        String tier = TierTagManager.getTierForPlayer(playerName);
-        if (tier != null && !tier.isBlank()) {
-            return tier;
+        try {
+            Object value = gameProfile.getClass().getMethod("getName").invoke(gameProfile);
+            if (value instanceof String name && !name.isBlank()) {
+                return name;
+            }
+        } catch (Exception ignored) {
         }
 
-        SkinManager skinManager = SkinManager.getInstance();
-        if (skinManager.hasCustomSkin(playerName) || skinManager.hasCustomCape(playerName)) {
-            return "HT1";
+        try {
+            Object value = gameProfile.getClass().getMethod("name").invoke(gameProfile);
+            if (value instanceof String name && !name.isBlank()) {
+                return name;
+            }
+        } catch (Exception ignored) {
         }
 
         return null;
     }
 
-    private boolean dragonclient$shouldShowDecorations(String playerName) {
+    private String dragonclient$getTierForDisplay(String playerName, boolean crackedPlayer) {
+        if (playerName == null || playerName.isBlank() || !TierTaggerModule.enabled) {
+            return null;
+        }
+
+        if (!crackedPlayer) {
+            String crackedTier = TierTagManager.getTierForPlayer(playerName, true);
+            if (crackedTier != null && !crackedTier.isBlank()) {
+                return crackedTier;
+            }
+        }
+
+        String tier = TierTagManager.getTierForPlayer(playerName, crackedPlayer);
+        if (tier != null && !tier.isBlank()) {
+            return tier;
+        }
+
+        return null;
+    }
+
+    private boolean dragonclient$shouldShowDecorations(String playerName, boolean crackedPlayer) {
         if (playerName == null || playerName.isBlank()) {
             return false;
         }
 
-        if (dragonclient$getTierForDisplay(playerName) != null) {
+        if (dragonclient$getTierForDisplay(playerName, crackedPlayer) != null) {
             return true;
         }
 
@@ -105,8 +160,13 @@ public class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        String playerName = entity.getName().getString();
+        String playerName = dragonclient$resolveLookupName(entity);
         DRAGONCLIENT_PLAYER_NAMES.put(playerState.id, playerName);
+        if (entity instanceof PlayerEntity playerEntity) {
+            DRAGONCLIENT_PLAYER_CRACKED.put(playerState.id, dragonclient$isLikelyCracked(playerEntity));
+        } else {
+            DRAGONCLIENT_PLAYER_CRACKED.put(playerState.id, false);
+        }
 
         Text baseName = entity.getDisplayName().copy();
         Text decoratedName = TierTagManager.decorateName(baseName.copy(), playerName);
@@ -139,7 +199,8 @@ public class MixinPlayerEntityRendererNameTag {
     ) {
         String playerName = DRAGONCLIENT_PLAYER_NAMES.get(state.id);
         boolean forceSelf = dragonclient$shouldRenderOwnNameTag(state);
-        if (!forceSelf && !dragonclient$shouldShowDecorations(playerName)) {
+        boolean crackedPlayer = DRAGONCLIENT_PLAYER_CRACKED.getOrDefault(state.id, false);
+        if (!forceSelf && !dragonclient$shouldShowDecorations(playerName, crackedPlayer)) {
             return;
         }
 
@@ -155,12 +216,19 @@ public class MixinPlayerEntityRendererNameTag {
             return;
         }
 
-        String tier = dragonclient$getTierForDisplay(playerName);
+        String tier = dragonclient$getTierForDisplay(playerName, crackedPlayer);
+        if ((tier == null || tier.isBlank()) && labelText != null) {
+            tier = TierTagManager.extractTierFromText(labelText.getString());
+        }
+        if ((tier == null || tier.isBlank()) && state.displayName != null) {
+            tier = TierTagManager.extractTierFromText(state.displayName.getString());
+        }
         float fullWidth = client.textRenderer.getWidth(labelText);
         float textLeft = -fullWidth / 2.0f;
-        float starLeft = textLeft - DRAGONCLIENT_NAME_TAG_ICON_WIDTH - 1.5f;
-        float tierIconLeft = starLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
+        float tierIconLeft = textLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
+        float starLeft = -DRAGONCLIENT_NAME_TAG_ICON_WIDTH / 2.0f;
         float iconTop = state.extraEars ? -10.0f : 1.0f;
+        float starTop = iconTop - DRAGONCLIENT_NAME_TAG_ICON_HEIGHT - 1.0f;
         int litLight = LightmapTextureManager.applyEmission(state.light, 2);
 
         matrices.push();
@@ -207,7 +275,7 @@ public class MixinPlayerEntityRendererNameTag {
                 entry,
                 vertexConsumer,
                 starLeft,
-                iconTop,
+                starTop,
                 DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
                 DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
                 litLight,
@@ -222,7 +290,7 @@ public class MixinPlayerEntityRendererNameTag {
                 entry,
                 vertexConsumer,
                 starLeft,
-                iconTop,
+                starTop,
                 DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
                 DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
                 litLight,

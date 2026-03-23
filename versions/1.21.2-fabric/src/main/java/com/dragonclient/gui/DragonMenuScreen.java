@@ -2,15 +2,11 @@ package com.dragonclient.gui;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Identifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DragonMenuScreen extends Screen {
-    private static final Logger LOGGER = LoggerFactory.getLogger("DragonClient");
     private static final int MENU_WIDTH = 200;
     private static final int MENU_HEIGHT = 280;
     private static final int FIXED_GUI_SCALE = 2;
@@ -20,8 +16,6 @@ public class DragonMenuScreen extends Screen {
     
     private int guiLeft;
     private int guiTop;
-    private int scaledWidth;
-    private int scaledHeight;
     
     public DragonMenuScreen() {
         super(Text.literal("Dragon Menu"));
@@ -34,53 +28,29 @@ public class DragonMenuScreen extends Screen {
     protected void init() {
         super.init();
         MinecraftClient client = MinecraftClient.getInstance();
-        
-        // Calculate scaled dimensions for rendering
-        this.scaledWidth = client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE;
-        this.scaledHeight = client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE;
-        this.guiLeft = (scaledWidth - MENU_WIDTH) / 2;
-        this.guiTop = (scaledHeight - MENU_HEIGHT) / 2;
-        
-        // Button dimensions in scaled space
-        int buttonWidth   = 160;
-        int buttonHeight  = 35;
-        int buttonX       = guiLeft + (MENU_WIDTH - buttonWidth) / 2;
-        int startY        = guiTop + 120;
-        int buttonSpacing = 40;
-        
-        // Calculate scale factor to convert scaled coordinates to real screen coordinates
-        double currentScale = client.getWindow().getScaleFactor();
-        double targetScale = FIXED_GUI_SCALE;
-        float scaleFactor = (float)(targetScale / currentScale);
-        
-        // Convert button positions from scaled space to real screen space
-        int realButtonX = Math.round(buttonX * scaleFactor);
-        int realFirstButtonY = Math.round(startY * scaleFactor);
-        int realButtonWidth = Math.round(buttonWidth * scaleFactor);
-        int realButtonHeight = Math.round(buttonHeight * scaleFactor);
-        int realSecondButtonY = Math.round((startY + buttonSpacing) * scaleFactor);
-        int realThirdButtonY = Math.round((startY + (buttonSpacing * 2)) * scaleFactor);
-        
-        // Invisible (zero-alpha) ButtonWidgets — they own all click/focus logic.
-        // We draw our own styled backgrounds in render(); no vanilla button chrome needed.
-        this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
-            MinecraftClient.getInstance().setScreen(new DragonClientScreen()))
-            .dimensions(realButtonX, realFirstButtonY, realButtonWidth, realButtonHeight)
-            .build());        
-        this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
-            MinecraftClient.getInstance().setScreen(new HudEditorScreen()))
-            .dimensions(realButtonX, realSecondButtonY, realButtonWidth, realButtonHeight)
-            .build());
-        
-        this.addDrawableChild(ButtonWidget.builder(Text.empty(), btn -> 
-            MinecraftClient.getInstance().setScreen(new DragonSkinsScreen()))
-            .dimensions(realButtonX, realThirdButtonY, realButtonWidth, realButtonHeight)
-            .build());
+        updateLayout(getFixedScaleFactor(client), client);
+    }
 
-        // Hide vanilla rendering — we paint everything ourselves
-        this.children().forEach(child -> {
-            if (child instanceof ButtonWidget btn) btn.setAlpha(0f);
-        });
+    private float getFixedScaleFactor(MinecraftClient client) {
+        double currentScale = client.getWindow().getScaleFactor();
+        if (currentScale <= 0.0d) {
+            return 1.0f;
+        }
+        return (float) (FIXED_GUI_SCALE / currentScale);
+    }
+
+    private void updateLayout(float scaleFactor, MinecraftClient client) {
+        int fixedScaledWidth;
+        int fixedScaledHeight;
+        if (this.width > 0 && this.height > 0) {
+            fixedScaledWidth = (int) (this.width / scaleFactor);
+            fixedScaledHeight = (int) (this.height / scaleFactor);
+        } else {
+            fixedScaledWidth = client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE;
+            fixedScaledHeight = client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE;
+        }
+        this.guiLeft = (fixedScaledWidth - MENU_WIDTH) / 2;
+        this.guiTop = (fixedScaledHeight - MENU_HEIGHT) / 2;
     }
 
     // -------------------------------------------------------------------------
@@ -92,9 +62,8 @@ public class DragonMenuScreen extends Screen {
         // The parent Screen class handles background rendering
         
         MinecraftClient client = MinecraftClient.getInstance();
-        double currentScale = client.getWindow().getScaleFactor();
-        double targetScale = FIXED_GUI_SCALE;
-        float scaleFactor = (float)(targetScale / currentScale);
+        float scaleFactor = getFixedScaleFactor(client);
+        updateLayout(scaleFactor, client);
         
         int transformedMouseX = (int)(mouseX / scaleFactor);
         int transformedMouseY = (int)(mouseY / scaleFactor);
@@ -230,13 +199,11 @@ public class DragonMenuScreen extends Screen {
     // -------------------------------------------------------------------------
     // Input
     // -------------------------------------------------------------------------
-    // FIX #3: mouseClicked is fully delegated to ButtonWidget children via
-    // super.mouseClicked — no manual hit-testing needed or wanted here.
+    // Handle clicks in fixed-scale coordinate space.
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         MinecraftClient client = MinecraftClient.getInstance();
-        double currentScale = client.getWindow().getScaleFactor();
-        double targetScale = FIXED_GUI_SCALE;
-        float scaleFactor = (float)(targetScale / currentScale);
+        float scaleFactor = getFixedScaleFactor(client);
+        updateLayout(scaleFactor, client);
         
         int transformedMouseX = (int)(mouseX / scaleFactor);
         int transformedMouseY = (int)(mouseY / scaleFactor);

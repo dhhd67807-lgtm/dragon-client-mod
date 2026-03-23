@@ -5,7 +5,7 @@ import com.dragonclient.module.ModuleCategory;
 
 public class MotionBlurModule extends Module {
     public static boolean enabled = false;
-    public static float blurAmount = 2.0f;
+    public static float blurAmount = 1.6f;
 
     public MotionBlurModule() {
         super("Motion Blur", "Adds motion blur effect", ModuleCategory.VISUAL);

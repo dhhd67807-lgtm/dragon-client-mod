@@ -41,7 +41,6 @@ public class ModuleManager {
         registerModule(new WeatherChangerModule());
         registerModule(new TimeChangerModule());
         registerModule(new ClearWaterModule());
-        registerModule(new OutlinesModule());
         registerModule(new ItemPhysicsModule());
         registerModule(new NametagModule());
         registerModule(new TierTaggerModule());

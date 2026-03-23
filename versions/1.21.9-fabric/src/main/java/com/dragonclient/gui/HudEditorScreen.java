@@ -4,6 +4,7 @@ import com.dragonclient.DragonClientMod;
 import com.dragonclient.module.Module;
 import com.dragonclient.module.hud.HudModule;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
@@ -15,6 +16,7 @@ import java.nio.file.Paths;
 
 public class HudEditorScreen extends Screen {
     private static PrintWriter debugLog;
+    private static final int HUD_REFERENCE_GUI_SCALE = 2;
     private HudModule selectedModule = null;
     private int dragOffsetX = 0;
     private int dragOffsetY = 0;
@@ -53,23 +55,18 @@ public class HudEditorScreen extends Screen {
         // Don't draw background - let HUD elements show clearly
         
         MinecraftClient client = MinecraftClient.getInstance();
-        
-        // Use the SAME scaling as in-game HUD rendering (from MixinInGameHud)
-        double guiScale = client.getWindow().getScaleFactor();
-        float baseScale = 4.0f;  // Base 4x scale (same as in-game HUD)
-        float hudScale = baseScale / (float)guiScale;
+        float hudScale = getHudReferenceScale(client);
+        int transformedMouseX = Math.round(mouseX / hudScale);
+        int transformedMouseY = Math.round(mouseY / hudScale);
         
         if (debugLog != null) {
             debugLog.println("RENDER: screenWidth=" + this.width + " screenHeight=" + this.height);
-            debugLog.println("  guiScale=" + guiScale + " baseScale=" + baseScale + " hudScale=" + hudScale);
-            debugLog.println("  mouseX=" + mouseX + " mouseY=" + mouseY);
+            debugLog.println("  mouseX=" + mouseX + " mouseY=" + mouseY + " hudScale=" + hudScale);
+            debugLog.println("  transformedMouseX=" + transformedMouseX + " transformedMouseY=" + transformedMouseY);
         }
         
         // Handle dragging in render loop
         if (selectedModule != null && selectedModule.isDragging()) {
-            int transformedMouseX = (int) mouseX;
-            int transformedMouseY = (int) mouseY;
-            
             int newX = transformedMouseX - dragOffsetX;
             int newY = transformedMouseY - dragOffsetY;
             
@@ -79,6 +76,7 @@ public class HudEditorScreen extends Screen {
         
         var matrices = context.getMatrices();
         matrices.pushMatrix();
+        matrices.scale(hudScale, hudScale);
         
         // Render all HUD modules with scaling (same as HudRenderer does in-game)
         int moduleCount = 0;
@@ -145,33 +143,31 @@ public class HudEditorScreen extends Screen {
         // Don't call super.render() - it draws the blur background
     }
 
+    @Override
+    public boolean mouseClicked(Click click, boolean dblClick) {
+        return mouseClicked(click.x(), click.y(), click.button());
+    }
+
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        float hudScale = getHudReferenceScale(client);
+        int transformedMouseX = Math.round((float) mouseX / hudScale);
+        int transformedMouseY = Math.round((float) mouseY / hudScale);
+
         if (debugLog != null) {
             debugLog.println("\n=== MOUSE_CLICKED EVENT ===");
-            debugLog.println("  button=" + button + " mouseX=" + mouseX + " mouseY=" + mouseY);
+            debugLog.println("  button=" + button + " mouseX=" + mouseX + " mouseY=" + mouseY + " hudScale=" + hudScale);
             debugLog.flush();
         }
         
         // Accept both button 0 (left) and button 1 (which might be left on Mac)
         if (button == 0 || button == 1) {
-            MinecraftClient client = MinecraftClient.getInstance();
-            
-            // Use the SAME scaling as in-game HUD rendering
-            double guiScale = client.getWindow().getScaleFactor();
-            float baseScale = 4.0f;
-            float hudScale = baseScale / (float)guiScale;
-            
-            // Transform mouse coordinates to HUD space
-            int transformedMouseX = (int) mouseX;
-            int transformedMouseY = (int) mouseY;
-            
             if (debugLog != null) {
-                debugLog.println("  hudScale=" + hudScale);
                 debugLog.println("  transformedMouseX=" + transformedMouseX + " transformedMouseY=" + transformedMouseY);
                 debugLog.println("\n=== CLICKABILITY TEST FOR ALL HUD ELEMENTS ===");
             }
             
-            System.out.println("HUD Editor Click: mouseX=" + transformedMouseX + " mouseY=" + transformedMouseY + " scale=" + hudScale);
+            System.out.println("HUD Editor Click: mouseX=" + transformedMouseX + " mouseY=" + transformedMouseY);
             
             // Check if clicking on any HUD module
             int checkCount = 0;
@@ -263,8 +259,8 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.gui.Click click, boolean dblClick) {
-        return mouseClicked(click.x(), click.y(), click.button());
+    public boolean mouseReleased(Click click) {
+        return mouseReleased(click.x(), click.y(), click.button());
     }
 
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
@@ -283,14 +279,19 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(net.minecraft.client.gui.Click click) {
-        return mouseReleased(click.x(), click.y(), click.button());
+    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+        return mouseDragged(click.x(), click.y(), click.button(), deltaX, deltaY);
     }
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        float hudScale = getHudReferenceScale(client);
+        int transformedMouseX = Math.round((float) mouseX / hudScale);
+        int transformedMouseY = Math.round((float) mouseY / hudScale);
+
         if (debugLog != null) {
             debugLog.println("\n=== MOUSE_DRAGGED EVENT ===");
-            debugLog.println("  button=" + button + " mouseX=" + mouseX + " mouseY=" + mouseY);
+            debugLog.println("  button=" + button + " mouseX=" + mouseX + " mouseY=" + mouseY + " hudScale=" + hudScale);
             debugLog.println("  deltaX=" + deltaX + " deltaY=" + deltaY);
             if (selectedModule != null) {
                 debugLog.println("  selectedModule=" + selectedModule.getName() + " dragging=" + selectedModule.isDragging());
@@ -301,15 +302,6 @@ public class HudEditorScreen extends Screen {
         }
         
         if ((button == 0 || button == 1) && selectedModule != null && selectedModule.isDragging()) {
-            MinecraftClient client = MinecraftClient.getInstance();
-            float scaleX = client.getWindow().getScaledWidth() / 1920f;
-            float scaleY = client.getWindow().getScaledHeight() / 1080f;
-            float hudScale = Math.min(scaleX, scaleY);
-            
-            // Transform mouse coordinates to HUD space
-            int transformedMouseX = (int) mouseX;
-            int transformedMouseY = (int) mouseY;
-            
             int newX = transformedMouseX - dragOffsetX;
             int newY = transformedMouseY - dragOffsetY;
             
@@ -332,11 +324,6 @@ public class HudEditorScreen extends Screen {
         return false;
     }
 
-    @Override
-    public boolean mouseDragged(net.minecraft.client.gui.Click click, double deltaX, double deltaY) {
-        return mouseDragged(click.x(), click.y(), click.button(), deltaX, deltaY);
-    }
-
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (debugLog != null) {
             debugLog.println("\nMOUSE_SCROLLED: verticalAmount=" + verticalAmount);
@@ -350,7 +337,7 @@ public class HudEditorScreen extends Screen {
         
         if (selectedModule != null) {
             float oldScale = selectedModule.getScale();
-            float newScale = selectedModule.getScale() + (float)(verticalAmount * 0.2); // Increased increment for 3x-5x range
+            float newScale = selectedModule.getScale() + (float)(verticalAmount * 0.1);
             selectedModule.setScale(newScale);
             
             if (debugLog != null) {
@@ -372,5 +359,16 @@ public class HudEditorScreen extends Screen {
 
     public boolean shouldPause() {
         return false;
+    }
+
+    private static float getHudReferenceScale(MinecraftClient client) {
+        if (client == null || client.getWindow() == null) {
+            return 1.0f;
+        }
+        double currentScale = client.getWindow().getScaleFactor();
+        if (currentScale <= 0.0d) {
+            return 1.0f;
+        }
+        return (float) (HUD_REFERENCE_GUI_SCALE / currentScale);
     }
 }

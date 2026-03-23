@@ -3,6 +3,7 @@ package com.dragonclient.gui;
 import com.dragonclient.cosmetics.GearSkinManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
@@ -31,6 +32,8 @@ public class DragonSkinsScreen extends Screen {
     private static final int PAGE_BUTTON_HEIGHT = 18;
     private static final int CATEGORY_TAB_HEIGHT = 20;
     private static final int CATEGORY_TAB_GAP = 8;
+    private static final int GEAR_BUTTON_SIZE = 20;
+    private static final int GEAR_BUTTON_INSET = 10;
 
     private static final Identifier STAR_ICON = Identifier.of("dragonclient", "textures/gui/cs_star_8.png");
     private static final Identifier CARD_TEXTURE = Identifier.of("dragonclient", "textures/gui/cards.png");
@@ -144,12 +147,24 @@ public class DragonSkinsScreen extends Screen {
             boolean enabled = GearSkinManager.isEnabled(card.category);
             boolean selected = GearSkinManager.isSelected(card.category, card.skinIndex);
             boolean active = enabled && selected;
+            boolean reducedInHand = GearSkinManager.isReducedInHand(card.category, card.skinIndex);
 
             int cardColor = active ? 0xFF2E281F : 0xFF252220;
             int overlay = active ? 0x55FFD36D : 0x40FFFFFF;
             drawRoundedRect(context, x, y, CARD_WIDTH, CARD_HEIGHT, cardColor);
             drawTextureWithColor(context, CARD_TEXTURE, x, y, CARD_WIDTH, CARD_HEIGHT, overlay);
             drawRoundedBorder(context, x, y, CARD_WIDTH, CARD_HEIGHT, 0xFF2A2622);
+
+            int gearX = gearButtonX(x);
+            int gearY = gearButtonY(y);
+            boolean gearHover = mx >= gearX && mx <= gearX + GEAR_BUTTON_SIZE && my >= gearY && my <= gearY + GEAR_BUTTON_SIZE;
+            int gearColor = reducedInHand
+                ? (gearHover ? 0xFFF6D77D : 0xFFE0C15F)
+                : (gearHover ? 0xFF393330 : 0xFF1A1614);
+            int gearIconColor = reducedInHand ? 0xFF100C08 : 0xFFFEFEFE;
+            drawRoundedButton(context, gearX, gearY, GEAR_BUTTON_SIZE, GEAR_BUTTON_SIZE, gearColor);
+            drawRoundedBorder(context, gearX, gearY, GEAR_BUTTON_SIZE, GEAR_BUTTON_SIZE, 0xFF2A2622);
+            drawGearIcon(context, gearX + GEAR_BUTTON_SIZE / 2, gearY + GEAR_BUTTON_SIZE / 2, gearIconColor);
 
             context.drawTextWithShadow(this.textRenderer, card.category.title(), x + 12, y + 14, 0xFFFEFEFE);
             context.drawText(this.textRenderer, GearSkinManager.getSkinLabel(card.category, card.skinIndex), x + 12, y + 29, 0xFFE5E5E5, false);
@@ -204,6 +219,11 @@ public class DragonSkinsScreen extends Screen {
         context.drawCenteredTextWithShadow(this.textRenderer, pageText, guiLeft + GUI_WIDTH / 2, navY + 5, 0xFFCCCCCC);
     }
 
+    @Override
+    public boolean mouseClicked(Click click, boolean dblClick) {
+        return mouseClicked(click.x(), click.y(), click.button());
+    }
+
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         MinecraftClient client = MinecraftClient.getInstance();
         float scaleFactor = getFixedScaleFactor(client);
@@ -234,10 +254,18 @@ public class DragonSkinsScreen extends Screen {
             int x = cardX(localIndex);
             int y = cardY(localIndex);
 
+            int gearX = gearButtonX(x);
+            int gearY = gearButtonY(y);
             int previewX = previewPanelX(x);
             int previewY = previewPanelY(y);
             int actionX = actionButtonX(x);
             int actionY = actionButtonY(y);
+
+            if (mx >= gearX && mx <= gearX + GEAR_BUTTON_SIZE &&
+                my >= gearY && my <= gearY + GEAR_BUTTON_SIZE) {
+                GearSkinManager.toggleReducedInHand(card.category, card.skinIndex);
+                return true;
+            }
 
             if (mx >= actionX && mx <= actionX + actionButtonWidth() &&
                 my >= actionY && my <= actionY + BUTTON_HEIGHT) {
@@ -376,6 +404,14 @@ public class DragonSkinsScreen extends Screen {
         return cardY + 34;
     }
 
+    private int gearButtonX(int cardX) {
+        return cardX + CARD_WIDTH - GEAR_BUTTON_SIZE - GEAR_BUTTON_INSET;
+    }
+
+    private int gearButtonY(int cardY) {
+        return cardY + GEAR_BUTTON_INSET;
+    }
+
     private int actionButtonX(int cardX) {
         return cardX + 12;
     }
@@ -419,6 +455,18 @@ public class DragonSkinsScreen extends Screen {
     private void drawCenteredText(DrawContext context, String text, int centerX, int y, int color) {
         int width = this.textRenderer.getWidth(text);
         context.drawText(this.textRenderer, text, centerX - width / 2, y, color, false);
+    }
+
+    private void drawGearIcon(DrawContext context, int centerX, int centerY, int color) {
+        context.fill(centerX - 1, centerY - 6, centerX + 1, centerY - 4, color);
+        context.fill(centerX - 1, centerY + 4, centerX + 1, centerY + 6, color);
+        context.fill(centerX - 6, centerY - 1, centerX - 4, centerY + 1, color);
+        context.fill(centerX + 4, centerY - 1, centerX + 6, centerY + 1, color);
+        context.fill(centerX - 4, centerY - 4, centerX - 2, centerY - 2, color);
+        context.fill(centerX + 2, centerY - 4, centerX + 4, centerY - 2, color);
+        context.fill(centerX - 4, centerY + 2, centerX - 2, centerY + 4, color);
+        context.fill(centerX + 2, centerY + 2, centerX + 4, centerY + 4, color);
+        context.fill(centerX - 3, centerY - 3, centerX + 3, centerY + 3, color);
     }
 
     private void renderCardPreview(DrawContext context, int x, int y, SkinCard card, float scaleFactor) {

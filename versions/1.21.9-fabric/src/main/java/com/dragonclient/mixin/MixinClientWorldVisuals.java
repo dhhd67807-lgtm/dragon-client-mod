@@ -1,6 +1,5 @@
 package com.dragonclient.mixin;
 
-import com.dragonclient.module.visual.ClearWaterModule;
 import com.dragonclient.module.visual.TimeChangerModule;
 import com.dragonclient.module.visual.WeatherChangerModule;
 import net.minecraft.client.world.ClientWorld;
@@ -22,21 +21,21 @@ public class MixinClientWorldVisuals {
 
     @Inject(method = "getRainGradient", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$overrideRain(float tickDelta, CallbackInfoReturnable<Float> cir) {
-        if ((Object) this instanceof ClientWorld && (WeatherChangerModule.clearWeather || ClearWaterModule.enabled)) {
+        if ((Object) this instanceof ClientWorld && WeatherChangerModule.clearWeather) {
             cir.setReturnValue(0.0F);
         }
     }
 
     @Inject(method = "getThunderGradient", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$overrideThunder(float tickDelta, CallbackInfoReturnable<Float> cir) {
-        if ((Object) this instanceof ClientWorld && (WeatherChangerModule.clearWeather || ClearWaterModule.enabled)) {
+        if ((Object) this instanceof ClientWorld && WeatherChangerModule.clearWeather) {
             cir.setReturnValue(0.0F);
         }
     }
 
     @Inject(method = "isRaining", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$overrideIsRaining(CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof ClientWorld && (WeatherChangerModule.clearWeather || ClearWaterModule.enabled)) {
+        if ((Object) this instanceof ClientWorld && WeatherChangerModule.clearWeather) {
             cir.setReturnValue(false);
         }
     }

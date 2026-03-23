@@ -158,7 +158,7 @@ public class DragonSkinsScreen extends Screen {
             int actionX = actionButtonX(x);
             int actionY = actionButtonY(y);
 
-            renderCardPreview(context, previewX, previewY, card);
+            renderCardPreview(context, previewX, previewY, card, scaleFactor);
 
             int buttonColor = active ? 0xCCFEFEFE : 0xFF1A1614;
             int buttonText = active ? 0xFF100C08 : 0xFFFEFEFE;
@@ -420,7 +420,7 @@ public class DragonSkinsScreen extends Screen {
         context.drawText(this.textRenderer, text, centerX - width / 2, y, color, false);
     }
 
-    private void renderCardPreview(DrawContext context, int x, int y, SkinCard card) {
+    private void renderCardPreview(DrawContext context, int x, int y, SkinCard card, float scaleFactor) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.world == null || client.player == null) {
             return;
@@ -442,24 +442,29 @@ public class DragonSkinsScreen extends Screen {
 
         int scissorInset = 1;
 
-        int boxLeft = x + scissorInset;
-        int boxTop = y + scissorInset;
-        int boxRight = x + PREVIEW_PANEL_WIDTH - scissorInset;
-        int boxBottom = y + PREVIEW_PANEL_HEIGHT - scissorInset;
+        int boxLeft = Math.round((x + scissorInset) * scaleFactor);
+        int boxTop = Math.round((y + scissorInset) * scaleFactor);
+        int boxRight = Math.round((x + PREVIEW_PANEL_WIDTH - scissorInset) * scaleFactor);
+        int boxBottom = Math.round((y + PREVIEW_PANEL_HEIGHT - scissorInset) * scaleFactor);
         float centerX = (boxLeft + boxRight) * 0.5f;
         float centerY = (boxTop + boxBottom) * 0.5f;
+
+        var matrices = context.getMatrices();
+        matrices.push();
+        matrices.scale(1.0f / scaleFactor, 1.0f / scaleFactor, 1.0f);
         InventoryScreen.drawEntity(
             context,
             boxLeft,
             boxTop,
             boxRight,
             boxBottom,
-            44,
+            Math.max(1, Math.round(44 * scaleFactor)),
             0.0625f,
-            centerX + 138.0f,
-            centerY + 16.0f,
+            centerX + 138.0f * scaleFactor,
+            centerY + 16.0f * scaleFactor,
             previewDummy
         );
+        matrices.pop();
 
     }
 }

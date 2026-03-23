@@ -3,6 +3,7 @@ package com.dragonclient.gui.hud;
 import com.dragonclient.DragonClientMod;
 import com.dragonclient.module.Module;
 import com.dragonclient.module.hud.HudModule;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
 import java.io.FileWriter;
@@ -26,52 +27,40 @@ public class HudRenderer {
     public void render(DrawContext context, float tickDelta) {
         try {
             renderCallCount++;
+            MinecraftClient client = MinecraftClient.getInstance();
+            float hudScale = getHudReferenceScale(client);
+            
+            // Get stack trace to see who called us
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            String caller = stackTrace.length > 2 ? stackTrace[2].toString() : "unknown";
             
             if (debugLog != null && renderCallCount % 60 == 0) {
-                debugLog.println("\n=== HUD RENDER CYCLE #" + renderCallCount + " ===");
-                debugLog.println("Timestamp: " + System.currentTimeMillis());
+                debugLog.println("HudRenderer.render() call #" + renderCallCount + " from: " + caller);
+                debugLog.flush();
             }
             
             int enabledCount = 0;
-            int totalModules = 0;
-            
-            for (Module module : DragonClientMod.getInstance().getModuleManager().getModules()) {
+            var matrices = context.getMatrices();
+            matrices.push();
+            matrices.scale(hudScale, hudScale, 1.0f);
+            for (Module module : DragonClientMod.getInstance().getModuleManager().getEnabledModules()) {
                 if (module instanceof HudModule) {
-                    totalModules++;
                     HudModule hudModule = (HudModule) module;
+                    enabledCount++;
                     
-                    if (debugLog != null && renderCallCount % 60 == 0) {
-                        debugLog.println("Module: " + hudModule.getName() + 
-                                       " | Enabled: " + hudModule.isEnabled() +
-                                       " | X: " + hudModule.getX() + 
-                                       " | Y: " + hudModule.getY() +
-                                       " | Width: " + hudModule.getWidth() +
-                                       " | Height: " + hudModule.getHeight() +
-                                       " | Scale: " + hudModule.getScale());
-                    }
-                    
-                    if (hudModule.isEnabled()) {
-                        enabledCount++;
-                        
-                        // Apply module-specific scaling
-                        var matrices = context.getMatrices();
-                        matrices.push();
-                        
-                        float moduleScale = hudModule.getScale();
-                        matrices.translate((float)hudModule.getX(), (float)hudModule.getY(), 0f);
-                        matrices.scale(moduleScale, moduleScale, 1.0f);
-                        matrices.translate((float)-hudModule.getX(), (float)-hudModule.getY(), 0f);
-                        
-                        hudModule.render(context, tickDelta);
-                        
-                        matrices.pop();
-                    }
+                    matrices.push();
+                    float moduleScale = hudModule.getScale();
+                    matrices.translate((float)hudModule.getX(), (float)hudModule.getY(), 0f);
+                    matrices.scale(moduleScale, moduleScale, 1.0f);
+                    matrices.translate((float)-hudModule.getX(), (float)-hudModule.getY(), 0f);
+                    hudModule.render(context, tickDelta);
+                    matrices.pop();
                 }
             }
+            matrices.pop();
             
-            if (debugLog != null && renderCallCount % 60 == 0) {
-                debugLog.println("Total HUD modules: " + totalModules + " | Enabled: " + enabledCount);
-                debugLog.flush();
+            if (debugLog != null && enabledCount == 0 && renderCallCount % 60 == 0) {
+                debugLog.println("No enabled HUD modules found!");
             }
         } catch (Exception e) {
             if (debugLog != null) {
@@ -80,5 +69,16 @@ public class HudRenderer {
             }
             DragonClientMod.LOGGER.error("Error rendering HUD", e);
         }
+    }
+
+    private static float getHudReferenceScale(MinecraftClient client) {
+        if (client == null || client.getWindow() == null) {
+            return 1.0f;
+        }
+        double currentScale = client.getWindow().getScaleFactor();
+        if (currentScale <= 0.0d) {
+            return 1.0f;
+        }
+        return (float) (HudModule.HUD_REFERENCE_GUI_SCALE / currentScale);
     }
 }

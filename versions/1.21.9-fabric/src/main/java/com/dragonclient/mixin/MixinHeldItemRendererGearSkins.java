@@ -1,0 +1,44 @@
+package com.dragonclient.mixin;
+
+import com.dragonclient.cosmetics.GearSkinManager;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.item.HeldItemRenderer;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ItemDisplayContext;
+import net.minecraft.item.ItemStack;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
+
+@Mixin(HeldItemRenderer.class)
+public class MixinHeldItemRendererGearSkins {
+
+    @Redirect(
+        method = "renderFirstPersonItem",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/render/item/HeldItemRenderer;renderItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;I)V"
+        )
+    )
+    private void dragonclient$scaleReducedHandSkin(
+        HeldItemRenderer instance,
+        LivingEntity entity,
+        ItemStack stack,
+        ItemDisplayContext displayContext,
+        MatrixStack matrices,
+        OrderedRenderCommandQueue commandQueue,
+        int light
+    ) {
+        float scale = GearSkinManager.getInHandScale(stack);
+        if (scale >= 0.999f) {
+            instance.renderItem(entity, stack, displayContext, matrices, commandQueue, light);
+            return;
+        }
+
+        matrices.push();
+        matrices.scale(scale, scale, scale);
+        instance.renderItem(entity, stack, displayContext, matrices, commandQueue, light);
+        matrices.pop();
+    }
+}

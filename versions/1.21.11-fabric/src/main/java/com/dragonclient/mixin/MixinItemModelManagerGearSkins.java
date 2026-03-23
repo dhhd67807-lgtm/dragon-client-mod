@@ -19,45 +19,49 @@ public class MixinItemModelManagerGearSkins {
     private ItemStack dragonclient$applyGearSkinUpdateForLivingEntity(
         ItemStack stack,
         ItemRenderState renderState,
+        ItemStack sourceStack,
         ItemDisplayContext displayContext,
         LivingEntity entity
     ) {
-        return GearSkinManager.getRenderStackForEntity(stack, entity);
+        return GearSkinManager.getRenderStackForEntity(sourceStack, entity);
     }
 
     @ModifyVariable(method = "updateForNonLivingEntity", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private ItemStack dragonclient$applyGearSkinUpdateForNonLivingEntity(
         ItemStack stack,
         ItemRenderState renderState,
+        ItemStack sourceStack,
         ItemDisplayContext displayContext,
         Entity entity
     ) {
-        return GearSkinManager.getRenderStackForEntity(stack, entity);
+        return GearSkinManager.getRenderStackForEntity(sourceStack, entity);
     }
 
     @ModifyVariable(method = "clearAndUpdate", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private ItemStack dragonclient$applyGearSkinClearAndUpdate(
         ItemStack stack,
         ItemRenderState renderState,
+        ItemStack sourceStack,
         ItemDisplayContext displayContext,
         World world,
         HeldItemContext heldContext,
         int seed
     ) {
         Entity holder = heldContext != null ? heldContext.getEntity() : null;
-        return GearSkinManager.getRenderStackForEntity(stack, holder);
+        return GearSkinManager.getRenderStackForEntity(sourceStack, holder);
     }
 
     @ModifyVariable(method = "update", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private ItemStack dragonclient$applyGearSkinUpdate(
         ItemStack stack,
         ItemRenderState renderState,
+        ItemStack sourceStack,
         ItemDisplayContext displayContext,
         World world,
         HeldItemContext heldContext,
         int seed
     ) {
         Entity holder = heldContext != null ? heldContext.getEntity() : null;
-        return GearSkinManager.getRenderStackForEntity(stack, holder);
+        return GearSkinManager.getRenderStackForEntity(sourceStack, holder);
     }
 }

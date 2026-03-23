@@ -13,6 +13,7 @@ public class ModuleOptionsScreen extends Screen {
 
     private static final int GUI_WIDTH = 420;
     private static final int GUI_HEIGHT = 240;
+    private static final int FIXED_GUI_SCALE = 2;
 
     private int guiLeft;
     private int guiTop;
@@ -25,13 +26,22 @@ public class ModuleOptionsScreen extends Screen {
 
     @Override
     protected void init() {
-        this.guiLeft = (this.width - GUI_WIDTH) / 2;
-        this.guiTop = (this.height - GUI_HEIGHT) / 2;
+        MinecraftClient client = MinecraftClient.getInstance();
+        updateLayout(getFixedScaleFactor(client), client);
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         renderBackground(context, mouseX, mouseY, delta);
+        MinecraftClient client = MinecraftClient.getInstance();
+        float scaleFactor = getFixedScaleFactor(client);
+        updateLayout(scaleFactor, client);
+        int transformedMouseX = Math.round(mouseX / scaleFactor);
+        int transformedMouseY = Math.round(mouseY / scaleFactor);
+
+        var matrices = context.getMatrices();
+        matrices.pushMatrix();
+        matrices.scale(scaleFactor, scaleFactor);
 
         int panelColor = 0xE0141110;
         int borderColor = 0xFF2A2622;
@@ -53,7 +63,7 @@ public class ModuleOptionsScreen extends Screen {
         int toggleY = guiTop + 90;
         int toggleW = GUI_WIDTH - 60;
         int toggleH = 34;
-        boolean toggleHovered = inside(mouseX, mouseY, toggleX, toggleY, toggleW, toggleH);
+        boolean toggleHovered = inside(transformedMouseX, transformedMouseY, toggleX, toggleY, toggleW, toggleH);
         int toggleColor = module.isEnabled() ? (toggleHovered ? 0xFF5EC96A : 0xFF4CAF50) : (toggleHovered ? 0xFF3A3330 : 0xFF2A2622);
 
         drawRect(context, toggleX, toggleY, toggleW, toggleH, toggleColor);
@@ -73,10 +83,12 @@ public class ModuleOptionsScreen extends Screen {
         int backY = guiTop + GUI_HEIGHT - 50;
         int backW = 110;
         int backH = 26;
-        boolean backHovered = inside(mouseX, mouseY, backX, backY, backW, backH);
+        boolean backHovered = inside(transformedMouseX, transformedMouseY, backX, backY, backW, backH);
         drawRect(context, backX, backY, backW, backH, backHovered ? 0xFF3A3330 : 0xFF2A2622);
         drawBorder(context, backX, backY, backW, backH, 0xFF47423E);
         context.drawTextWithShadow(this.textRenderer, "< BACK", backX + 30, backY + 9, 0xFFFFFFFF);
+
+        matrices.popMatrix();
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -84,8 +96,11 @@ public class ModuleOptionsScreen extends Screen {
             return false;
         }
 
-        int mx = (int) mouseX;
-        int my = (int) mouseY;
+        MinecraftClient client = MinecraftClient.getInstance();
+        float scaleFactor = getFixedScaleFactor(client);
+        updateLayout(scaleFactor, client);
+        int mx = Math.round((float) mouseX / scaleFactor);
+        int my = Math.round((float) mouseY / scaleFactor);
 
         int toggleX = guiLeft + 30;
         int toggleY = guiTop + 90;
@@ -145,6 +160,28 @@ public class ModuleOptionsScreen extends Screen {
 
     private static boolean inside(int mx, int my, int x, int y, int w, int h) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
+    }
+
+    private float getFixedScaleFactor(MinecraftClient client) {
+        double currentScale = client.getWindow().getScaleFactor();
+        if (currentScale <= 0.0d) {
+            return 1.0f;
+        }
+        return (float) (FIXED_GUI_SCALE / currentScale);
+    }
+
+    private void updateLayout(float scaleFactor, MinecraftClient client) {
+        int fixedScaledWidth;
+        int fixedScaledHeight;
+        if (this.width > 0 && this.height > 0) {
+            fixedScaledWidth = (int) (this.width / scaleFactor);
+            fixedScaledHeight = (int) (this.height / scaleFactor);
+        } else {
+            fixedScaledWidth = client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE;
+            fixedScaledHeight = client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE;
+        }
+        this.guiLeft = (fixedScaledWidth - GUI_WIDTH) / 2;
+        this.guiTop = (fixedScaledHeight - GUI_HEIGHT) / 2;
     }
 
     private static void drawRect(DrawContext context, int x, int y, int w, int h, int color) {
