@@ -65,9 +65,11 @@ public abstract class MixinAbstractClientPlayerEntity {
 
         MinecraftClient client = MinecraftClient.getInstance();
         boolean isLocalPlayer = client != null && player == client.player;
-        if (customCape == null && isLocalPlayer) {
+        if (isLocalPlayer) {
             CapeManager capeManager = CapeManager.getInstance();
             if (capeManager.hasCapeEquipped()) {
+                // Always prioritize selected launcher cape for local player so animated presets
+                // are not overridden by stale static cape_path entries.
                 customCape = capeManager.getCapeTexture();
             }
         }
