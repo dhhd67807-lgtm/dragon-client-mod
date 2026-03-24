@@ -25,7 +25,8 @@
     "MixinItemEntityRendererPhysics",
     "MixinEntityRendererNameTag",
     "MixinClientWorldVisuals",
-    "MixinPlayerEntityRendererNameTag",
+        "MixinMinecraftClientOutlines",
+"MixinPlayerEntityRendererNameTag",
     "MixinSplashOverlay",
     "MixinTitleScreen",
     "MixinPressableTextWidget"

@@ -13,14 +13,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(EntityRenderer.class)
 public class MixinEntityRendererNameTag {
 
-    private boolean dragonclient$shouldForceNameTag(Entity entity) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        return NametagModule.enabled && entity instanceof PlayerEntity && client != null && entity == client.player;
+    private boolean dragonclient$shouldAlwaysShowNameTag(Entity entity) {
+        return NametagModule.enabled && entity instanceof PlayerEntity;
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$hasLabel(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(entity)) {
+        if (dragonclient$shouldAlwaysShowNameTag(entity)) {
             cir.setReturnValue(true);
         }
     }

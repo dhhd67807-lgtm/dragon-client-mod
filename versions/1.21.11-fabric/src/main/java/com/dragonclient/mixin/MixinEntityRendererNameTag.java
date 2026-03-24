@@ -15,43 +15,38 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(EntityRenderer.class)
 public class MixinEntityRendererNameTag {
 
-    private boolean dragonclient$shouldForceNameTag(Entity entity) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        return NametagModule.enabled && entity instanceof PlayerEntity && client != null && entity == client.player;
+    private boolean dragonclient$shouldAlwaysShowNameTag(Entity entity) {
+        return NametagModule.enabled && entity instanceof PlayerEntity;
     }
 
-    private boolean dragonclient$shouldForceNameTag(EntityRenderState state) {
-        if (!(state instanceof PlayerEntityRenderState playerState)) {
-            return false;
-        }
-        MinecraftClient client = MinecraftClient.getInstance();
-        return client != null && client.player != null && playerState.id == client.player.getId();
+    private boolean dragonclient$shouldAlwaysShowNameTag(EntityRenderState state) {
+        return NametagModule.enabled && state instanceof PlayerEntityRenderState;
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$hasLabelOld(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(entity)) {
+        if (dragonclient$shouldAlwaysShowNameTag(entity)) {
             cir.setReturnValue(true);
         }
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/entity/Entity;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$hasLabelNew(Entity entity, double distance, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(entity)) {
+        if (dragonclient$shouldAlwaysShowNameTag(entity)) {
             cir.setReturnValue(true);
         }
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/client/render/entity/state/EntityRenderState;)Z", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$hasLabelState(EntityRenderState state, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(state)) {
+        if (dragonclient$shouldAlwaysShowNameTag(state)) {
             cir.setReturnValue(true);
         }
     }
 
     @Inject(method = "hasLabel(Lnet/minecraft/client/render/entity/state/EntityRenderState;D)Z", at = @At("HEAD"), cancellable = true, require = 0)
     private void dragonclient$hasLabelStateDistance(EntityRenderState state, double distance, CallbackInfoReturnable<Boolean> cir) {
-        if (dragonclient$shouldForceNameTag(state)) {
+        if (dragonclient$shouldAlwaysShowNameTag(state)) {
             cir.setReturnValue(true);
         }
     }

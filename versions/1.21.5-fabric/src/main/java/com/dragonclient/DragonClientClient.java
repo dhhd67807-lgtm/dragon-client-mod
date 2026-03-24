@@ -1,5 +1,6 @@
 package com.dragonclient;
 
+import com.dragonclient.cosmetics.CapeManager;
 import com.dragonclient.cosmetics.GearSkinManager;
 import com.dragonclient.gui.hud.HudRenderer;
 import com.dragonclient.module.movement.FreelookModule;
@@ -53,6 +54,7 @@ public class DragonClientClient implements ClientModInitializer {
                     FreelookModule.enforceLockedRotation(client);
                 }
             }
+            CapeManager.getInstance().tick();
 
             if (openGuiKey != null) {
                 while (openGuiKey.wasPressed()) {

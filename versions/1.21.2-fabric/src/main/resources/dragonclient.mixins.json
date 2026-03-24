@@ -22,7 +22,8 @@
     "MixinItemEntityRendererPhysics",
     "MixinEntityRendererNameTag",
     "MixinClientWorldVisuals",
-    "MixinPlayerEntityRendererNameTag"
+        "MixinMinecraftClientOutlines",
+"MixinPlayerEntityRendererNameTag"
   ],
   "injectors": {
     "defaultRequire": 1
