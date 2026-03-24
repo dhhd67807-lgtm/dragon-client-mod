@@ -58,6 +58,7 @@ public final class TierTagManager {
     private static final Pattern MINECRAFT_FORMATTING_PATTERN = Pattern.compile("(?i)\u00A7[0-9A-FK-ORX]");
     private static final Pattern PLAYER_NAME_TOKEN_PATTERN = Pattern.compile("[A-Za-z0-9_]{1,16}");
     private static final Pattern TIER_TOKEN_PATTERN = Pattern.compile("(?i)\\b(?:HT|LT)\\s*[-_]?\\s*([1-5])\\b");
+    private static final Pattern LOOSE_TIER_TOKEN_PATTERN = Pattern.compile("(?i)\\b([HL])\\s*[^A-Z0-9]{0,3}\\s*([1-5])\\b");
 
     private static final List<String> PROFILE_API_URLS = List.of(
         "https://mctiers.com/api/v2/profile/",
@@ -125,13 +126,6 @@ public final class TierTagManager {
         scheduleCrackedListingFetchIfNeeded();
         scheduleRemoteLookupIfNeeded(cacheKey, resolvedPlayerName, crackedPlayer);
 
-        // Prefer deterministic local/cracked sources first so stale or
-        // over-eager third-party API results can't override them.
-        String crackedTier = resolveCrackedTierFromListing(resolvedPlayerName);
-        if (crackedTier != null) {
-            return crackedTier;
-        }
-
         String localTier = LOCAL_PLAYER_TIERS.get(key);
         if (localTier != null) {
             return localTier;
@@ -149,6 +143,16 @@ public final class TierTagManager {
             return remote.tier;
         }
 
+        // Fallback only for cracked lookups. This avoids displaying
+        // incorrect generic listing tiers (for example HT2) when the
+        // authoritative profile endpoint has not returned yet.
+        if (crackedPlayer) {
+            String crackedTier = resolveCrackedTierFromListing(resolvedPlayerName);
+            if (crackedTier != null) {
+                return crackedTier;
+            }
+        }
+
         return null;
     }
 
@@ -164,7 +168,10 @@ public final class TierTagManager {
     }
 
     public static Text decorateName(Text baseName, String playerName) {
-        String tier = getTierForPlayer(playerName);
+        String tier = getTierForPlayer(playerName, false);
+        if (tier == null) {
+            tier = getTierForPlayer(playerName, true);
+        }
         if (tier == null) {
             return baseName;
         }
@@ -327,18 +334,19 @@ public final class TierTagManager {
         }
 
         String lowerName = cleanName.toLowerCase(Locale.ROOT);
-        String crackedListedTier = resolveCrackedTierFromListing(cleanName);
-        if (crackedListedTier != null) {
-            return crackedListedTier;
-        }
-
-        String crackedInfoTier = fetchCrackedInfoTier(cleanName);
-        if (crackedInfoTier != null) {
-            return crackedInfoTier;
-        }
-
         if (crackedPlayer) {
-            return null;
+            // Prefer per-player info endpoint over broad merged category listing.
+            String crackedInfoTier = fetchCrackedInfoTier(cleanName);
+            if (crackedInfoTier != null) {
+                return crackedInfoTier;
+            }
+
+            String crackedListedTier = resolveCrackedTierFromListing(cleanName);
+            if (crackedListedTier != null) {
+                return crackedListedTier;
+            }
+
+            return CRACKED_PLAYER_TIERS.get(lowerName);
         }
 
         List<String> identifiers = new ArrayList<>();
@@ -369,11 +377,7 @@ public final class TierTagManager {
             }
         }
 
-        String fallbackCrackedTier = resolveCrackedTierFromListing(cleanName);
-        if (fallbackCrackedTier != null) {
-            return fallbackCrackedTier;
-        }
-        return CRACKED_PLAYER_TIERS.get(lowerName);
+        return null;
     }
 
     private static void scheduleCrackedListingFetchIfNeeded() {
@@ -976,13 +980,42 @@ public final class TierTagManager {
             return null;
         }
 
-        Matcher matcher = TIER_TOKEN_PATTERN.matcher(rawText);
-        if (!matcher.find()) {
+        String cleaned = MINECRAFT_FORMATTING_PATTERN.matcher(rawText).replaceAll(" ").trim();
+        if (cleaned.isEmpty()) {
             return null;
         }
 
-        String token = matcher.group();
-        return normalizeTier(token);
+        Matcher matcher = TIER_TOKEN_PATTERN.matcher(cleaned);
+        if (matcher.find()) {
+            String token = matcher.group();
+            String normalized = normalizeTier(token);
+            if (normalized != null) {
+                return normalized;
+            }
+        }
+
+        Matcher looseMatcher = LOOSE_TIER_TOKEN_PATTERN.matcher(cleaned);
+        if (looseMatcher.find()) {
+            String side = looseMatcher.group(1);
+            String level = looseMatcher.group(2);
+            String normalized = normalizeTier((side.equalsIgnoreCase("H") ? "HT" : "LT") + level);
+            if (normalized != null) {
+                return normalized;
+            }
+        }
+
+        String[] tokens = cleaned.toUpperCase(Locale.ROOT).split("[^A-Z0-9]+");
+        for (String token : tokens) {
+            if (token == null || token.isBlank()) {
+                continue;
+            }
+            String normalized = normalizeTier(token);
+            if (normalized != null) {
+                return normalized;
+            }
+        }
+
+        return null;
     }
 
     private static final class CachedTierResult {

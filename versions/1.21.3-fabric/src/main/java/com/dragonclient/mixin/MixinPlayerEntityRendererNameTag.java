@@ -36,7 +36,7 @@ public class MixinPlayerEntityRendererNameTag {
     private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 6.0f;
     private static final float DRAGONCLIENT_TIER_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_TIER_ICON_HEIGHT = 6.0f;
-    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.5f;
+    private static final float DRAGONCLIENT_TIER_ICON_GAP = 18.0f;
     private static final Map<Integer, String> DRAGONCLIENT_PLAYER_NAMES = new ConcurrentHashMap<>();
     private static final Map<Integer, Boolean> DRAGONCLIENT_PLAYER_CRACKED = new ConcurrentHashMap<>();
 
@@ -82,16 +82,14 @@ public class MixinPlayerEntityRendererNameTag {
             return null;
         }
 
-        if (!crackedPlayer) {
-            String crackedTier = TierTagManager.getTierForPlayer(playerName, true);
-            if (crackedTier != null && !crackedTier.isBlank()) {
-                return crackedTier;
-            }
-        }
-
         String tier = TierTagManager.getTierForPlayer(playerName, crackedPlayer);
         if (tier != null && !tier.isBlank()) {
             return tier;
+        }
+
+        String fallbackTier = TierTagManager.getTierForPlayer(playerName, !crackedPlayer);
+        if (fallbackTier != null && !fallbackTier.isBlank()) {
+            return fallbackTier;
         }
 
         return null;
@@ -189,7 +187,7 @@ public class MixinPlayerEntityRendererNameTag {
         float tierIconLeft = textLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
         float starLeft = -DRAGONCLIENT_NAME_TAG_ICON_WIDTH / 2.0f;
         float iconTop = 1.0f;
-        float starTop = iconTop - DRAGONCLIENT_NAME_TAG_ICON_HEIGHT - 1.0f;
+        float starTop = iconTop - DRAGONCLIENT_NAME_TAG_ICON_HEIGHT - 6.0f;
         int litLight = LightmapTextureManager.applyEmission(light, 2);
 
         MatrixStack.Entry entry = matrices.peek();

@@ -37,7 +37,7 @@ public class MixinPlayerEntityRendererNameTag {
     private static final float DRAGONCLIENT_NAME_TAG_ICON_HEIGHT = 6.0f;
     private static final float DRAGONCLIENT_TIER_ICON_WIDTH = 6.0f;
     private static final float DRAGONCLIENT_TIER_ICON_HEIGHT = 6.0f;
-    private static final float DRAGONCLIENT_TIER_ICON_GAP = 0.5f;
+    private static final float DRAGONCLIENT_TIER_ICON_GAP = 18.0f;
     private static final Map<Integer, String> DRAGONCLIENT_PLAYER_NAMES = new ConcurrentHashMap<>();
     private static final Map<Integer, Boolean> DRAGONCLIENT_PLAYER_CRACKED = new ConcurrentHashMap<>();
 
@@ -108,16 +108,14 @@ public class MixinPlayerEntityRendererNameTag {
             return null;
         }
 
-        if (!crackedPlayer) {
-            String crackedTier = TierTagManager.getTierForPlayer(playerName, true);
-            if (crackedTier != null && !crackedTier.isBlank()) {
-                return crackedTier;
-            }
-        }
-
         String tier = TierTagManager.getTierForPlayer(playerName, crackedPlayer);
         if (tier != null && !tier.isBlank()) {
             return tier;
+        }
+
+        String fallbackTier = TierTagManager.getTierForPlayer(playerName, !crackedPlayer);
+        if (fallbackTier != null && !fallbackTier.isBlank()) {
+            return fallbackTier;
         }
 
         return null;
@@ -217,18 +215,16 @@ public class MixinPlayerEntityRendererNameTag {
         }
 
         String tier = dragonclient$getTierForDisplay(playerName, crackedPlayer);
-        if ((tier == null || tier.isBlank()) && labelText != null) {
-            tier = TierTagManager.extractTierFromText(labelText.getString());
-        }
-        if ((tier == null || tier.isBlank()) && state.displayName != null) {
-            tier = TierTagManager.extractTierFromText(state.displayName.getString());
-        }
         float fullWidth = client.textRenderer.getWidth(labelText);
         float textLeft = -fullWidth / 2.0f;
         float tierIconLeft = textLeft - DRAGONCLIENT_TIER_ICON_WIDTH - DRAGONCLIENT_TIER_ICON_GAP;
         float starLeft = -DRAGONCLIENT_NAME_TAG_ICON_WIDTH / 2.0f;
         float iconTop = state.extraEars ? -10.0f : 1.0f;
-        float starTop = iconTop - DRAGONCLIENT_NAME_TAG_ICON_HEIGHT - 1.0f;
+        float starTop = iconTop - DRAGONCLIENT_NAME_TAG_ICON_HEIGHT - 6.0f;
+        final float finalTierIconLeft = tierIconLeft;
+        final float finalStarLeft = starLeft;
+        final float finalIconTop = iconTop;
+        final float finalStarTop = starTop;
         int litLight = LightmapTextureManager.applyEmission(state.light, 2);
 
         matrices.push();
@@ -244,8 +240,8 @@ public class MixinPlayerEntityRendererNameTag {
                 (entry, vertexConsumer) -> dragonclient$drawIcon(
                     entry,
                     vertexConsumer,
-                    tierIconLeft,
-                    iconTop,
+                    finalTierIconLeft,
+                    finalIconTop,
                     DRAGONCLIENT_TIER_ICON_WIDTH,
                     DRAGONCLIENT_TIER_ICON_HEIGHT,
                     litLight,
@@ -258,8 +254,8 @@ public class MixinPlayerEntityRendererNameTag {
                 (entry, vertexConsumer) -> dragonclient$drawIcon(
                     entry,
                     vertexConsumer,
-                    tierIconLeft,
-                    iconTop,
+                    finalTierIconLeft,
+                    finalIconTop,
                     DRAGONCLIENT_TIER_ICON_WIDTH,
                     DRAGONCLIENT_TIER_ICON_HEIGHT,
                     litLight,
@@ -274,8 +270,8 @@ public class MixinPlayerEntityRendererNameTag {
             (entry, vertexConsumer) -> dragonclient$drawIcon(
                 entry,
                 vertexConsumer,
-                starLeft,
-                starTop,
+                finalStarLeft,
+                finalStarTop,
                 DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
                 DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
                 litLight,
@@ -289,8 +285,8 @@ public class MixinPlayerEntityRendererNameTag {
             (entry, vertexConsumer) -> dragonclient$drawIcon(
                 entry,
                 vertexConsumer,
-                starLeft,
-                starTop,
+                finalStarLeft,
+                finalStarTop,
                 DRAGONCLIENT_NAME_TAG_ICON_WIDTH,
                 DRAGONCLIENT_NAME_TAG_ICON_HEIGHT,
                 litLight,
